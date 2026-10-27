@@ -1,0 +1,36 @@
+{
+  "jira_instance": "https://jira.syf.bank",
+  "confluence_space": "https://confluence.syf.bank/display/AIPLAT",
+  "bitbucket_project": "https://bitbucket.syf.bank/projects/AIPLAT/repos/syf-eval-gateway",
+  "project_key": "AI-EVAL",
+  "default_epic_key": "AI-EVAL-101",
+  "velocity_pts_per_sprint": 20,
+  "sprint_length_weeks": 2,
+  "engineering_squads": [
+    {
+      "squad_id": "SYF-Platform-Mesh-Squad",
+      "lead": "Elena Rostova (Principal Platform Engineer)",
+      "focus": "ROSA OpenShift, Google Cloud Run Private Subnets, Envoy Service Mesh (mTLS 1.3), ClickHouse StatefulSets"
+    },
+    {
+      "squad_id": "SYF-AI-FinOps-Squad",
+      "lead": "Devon Brooks (Staff AI Infrastructure Engineer)",
+      "focus": "FastAPI OpenTelemetry W3C TraceContext Collector Proxy, Langfuse v3 SDK, FinOps Cost Attribution"
+    },
+    {
+      "squad_id": "SYF-SecOps-DLP-Squad",
+      "lead": "Priya Nair (Lead Cyber & PCI/HIPAA Architect)",
+      "focus": "Inline PAN/SSN/CareCredit MRN Regex Scrubber, Model Armor DLP, Microsoft Entra ID OAuth 2.0 JWKS Auth"
+    }
+  ],
+  "active_developer_blockers": {
+    "AI-STORY-102": {
+      "ticket_id": "AI-STORY-102",
+      "reported_by": "Devon Brooks (SYF-AI-FinOps-Squad)",
+      "status": "BLOCKED",
+      "severity": "HIGH (SLA Breach Risk)",
+      "summary": "Synchronous Microsoft Entra ID `/oauth2/v2.0/introspect` WAN call adds 42.3ms P95 latency per telemetry batch, breaching the 25ms P95 proxy overhead SLA in PRD Section 4.",
+      "recommended_fix": "Switch to local JWKS public-key signature validation with a 300-second asynchronous refresh TTL in the FastAPI middleware, reducing auth overhead from 42.3ms to 1.8ms."
+    }
+  }
+}

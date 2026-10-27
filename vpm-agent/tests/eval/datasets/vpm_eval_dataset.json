@@ -1,0 +1,67 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "finops_tco_and_security_synthesis",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Consult Morgan and Marcus to compare Arize AX SaaS, Braintrust Hybrid, and Langfuse Self-Hosted at 5M and 50M monthly spans for Synchrony Financial, including PCI-DSS v4.0 and CareCredit HIPAA compliance."
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Langfuse Enterprise Self-Hosted on AWS ROSA / Google Cloud Run is the recommended winner at $76,000/year for 5M spans/month and $130,000/year for 50M GECX spans/month, saving $955,000/year compared to Arize AX SaaS ($1,085,000/year) while satisfying 100% PCI-DSS v4.0 (PAN/SSN) and CareCredit HIPAA (MRN/ICD-10) zero-egress mandates, Entra ID local JWKS caching (300s TTL), and Synchrony Envoy Service Mesh (mTLS 1.3)."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "executive_curveball_cb1_kong_deprecation",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Dan Weis just threw Curveball CB-1: Kong Enterprise Gateway v3.4 is officially deprecated in Q1. Consult Marcus on the blast radius, sprint delta, and budget impact."
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Curveball CB-1 (Kong Enterprise Gateway v3.4 Q1 Deprecation) requires migrating east-west telemetry traffic to the Synchrony Internal Service Mesh (Envoy sidecar mesh.syf.bank/injected: true with mTLS 1.3) and Apigee Hybrid for north-south ingress. Impact: +2 sprints (+16 story points, adding AI-STORY-104 and AI-STORY-105) and +$32,000 one-time engineering migration budget."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "eval_case_id": "hitl_gated_jira_preview",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Show me the Jira Epic AI-EVAL-101 and Gherkin User Story breakdown from Devin so I can review before approving creation in Jira."
+          }
+        ]
+      },
+      "reference": {
+        "response": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Here is the dry-run preview for Jira Epic AI-EVAL-101 with its Gherkin User Stories (AI-STORY-101 through AI-STORY-105), story points, and Synchrony engineering squad assignments. Per our Human-in-the-Loop (HITL) governance gate, please confirm approval before I commit these tickets to Jira, Confluence, and Bitbucket."
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

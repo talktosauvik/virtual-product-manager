@@ -1,0 +1,124 @@
+{
+  "organization": "Synchrony Financial (SYF)",
+  "architecture_review_board": "SYF Enterprise Architecture & Cyber Security Governance (CISO / CTO)",
+  "version": "2026.Q4",
+  "mandatory_policies": {
+    "pci_dss_v4_zero_egress": {
+      "policy_id": "SYF-SEC-PCI-001",
+      "title": "Tier-1 Cardholder Data (CHD) Zero-Egress Mandate",
+      "rule": "No GenAI prompts, completions, or OpenTelemetry spans originating from Tier-1 credit servicing, underwriting, or collections workflows may egress to external multi-tenant SaaS endpoints.",
+      "required_redaction_patterns": {
+        "PAN": "\\b(?:\\d[ -]*?){13,16}\\b -> [REDACTED_PAN]",
+        "SSN": "\\b\\d{3}-\\d{2}-\\d{4}\\b -> [REDACTED_SSN]"
+      },
+      "safe_deserialization_rule": "Strictly use json.dumps() + compiled regex + json.loads(). Python eval() is banned due to Remote Code Execution (RCE) risk."
+    },
+    "carecredit_hipaa_phi": {
+      "policy_id": "SYF-SEC-HIPAA-002",
+      "title": "CareCredit Health & Wellness HIPAA PHI Protection Mandate",
+      "rule": "All CareCredit provider and patient financing telemetry must scrub Medical Record Numbers (MRN) and ICD-10 diagnosis codes inline prior to ClickHouse persistence.",
+      "required_redaction_patterns": {
+        "MRN": "\\bMRN-\\d{6,10}\\b -> [REDACTED_MRN]",
+        "ICD10": "\\b[A-TV-Z][0-9][0-9AB](?:\\.[0-9A-TV-Z]{1,4})?\\b -> [REDACTED_ICD10]"
+      }
+    },
+    "identity_and_authentication": {
+      "policy_id": "SYF-IAM-ENTRA-004",
+      "title": "Microsoft Entra ID OAuth 2.0 / OIDC & Local JWKS Caching Standard",
+      "rule": "All internal API and telemetry proxy endpoints must validate Microsoft Entra ID OAuth 2.0 JWT bearer tokens. To satisfy the <25ms P95 proxy latency SLA, services MUST cache Entra ID JWKS public keys locally in-memory/Redis (TTL=300s) rather than invoking synchronous WAN token introspection."
+    },
+    "network_ingress_and_service_mesh": {
+      "policy_id": "SYF-NET-MESH-009",
+      "title": "Q1 Kong Enterprise Gateway v3.4 Deprecation & Envoy Service Mesh Mandate",
+      "deprecated_component": "Kong Enterprise Gateway v3.4 (DEPRECATED EFFECTIVE Q1 — DO NOT USE FOR NEW SERVICES)",
+      "approved_east_west_mesh": "Synchrony Internal Service Mesh (Envoy sidecar injection via pod annotation mesh.syf.bank/injected: 'true' with strict mTLS 1.3)",
+      "approved_north_south_gateway": "Apigee Hybrid / Apigee X with Private Service Connect (PSC)"
+    },
+    "container_and_runtime_platforms": {
+      "policy_id": "SYF-PLAT-RUNTIME-007",
+      "primary_runtime": "AWS Red Hat OpenShift Service on AWS (ROSA) using registry.access.redhat.com/ubi9/python-312:latest (non-root UID 1001)",
+      "approved_portable_cloud_runtime": "Google Cloud Run Private Subnets with Direct VPC Egress & Cloud IAM Workload Identity"
+    }
+  },
+  "curveball_catalog": {
+    "CB-1": {
+      "curveball_id": "CB-1",
+      "name": "Kong Enterprise Gateway v3.4 Q1 Deprecation -> Envoy Service Mesh Migration",
+      "trigger_keywords": ["kong", "gateway", "deprecated", "service mesh", "envoy", "mtls"],
+      "sprint_delta": 2,
+      "story_points_delta": 16,
+      "budget_delta_usd": 32000,
+      "revised_total_sprints": 5,
+      "affected_squads": ["SYF-Platform-Mesh-Squad", "SYF-SecOps-DLP-Squad"],
+      "architectural_remediation": "Remove Kong Enterprise Gateway v3.4 ingress controller. Inject Synchrony Envoy Service Mesh sidecar (mesh.syf.bank/injected: 'true') with strict mTLS 1.3 SPIFFE certificate validation and route north-south traffic via Apigee Hybrid.",
+      "new_jira_stories": [
+        {
+          "story_id": "AI-STORY-104",
+          "title": "Migrate Evaluation Gateway Ingress from Deprecated Kong v3.4 to Envoy Service Mesh (mTLS 1.3)",
+          "squad": "SYF-Platform-Mesh-Squad",
+          "story_points": 8,
+          "sprint": "Sprint 4",
+          "bitbucket_branch": "feature/AI-EVAL-101-envoy-mesh-migration"
+        },
+        {
+          "story_id": "AI-STORY-105",
+          "title": "Automate SPIFFE/Entra ID mTLS Certificate Rotation & Envoy Telemetry Filter Policies",
+          "squad": "SYF-SecOps-DLP-Squad",
+          "story_points": 8,
+          "sprint": "Sprint 5",
+          "bitbucket_branch": "feature/AI-EVAL-101-spiffe-mtls-rotation"
+        }
+      ]
+    },
+    "CB-2": {
+      "curveball_id": "CB-2",
+      "name": "10x GECX Contact Center Volume Surge (5M -> 50M Spans/Month across 9,000 Agents)",
+      "trigger_keywords": ["50m", "50 million", "gecx", "contact center", "9000", "9,000", "10x", "scale", "volume"],
+      "sprint_delta": 1,
+      "story_points_delta": 8,
+      "budget_delta_usd": 54000,
+      "revised_total_sprints": 4,
+      "annual_tco_comparison_at_50m": {
+        "arize_ax_annual_usd": 1085000,
+        "braintrust_annual_usd": 804000,
+        "langfuse_self_hosted_annual_usd": 130000,
+        "net_annual_savings_vs_arize_usd": 955000
+      },
+      "affected_squads": ["SYF-Platform-Mesh-Squad", "SYF-AI-FinOps-Squad"],
+      "architectural_remediation": "Upgrade ClickHouse backend from single-node to 3-node sharded ClickHouse Keeper cluster on ROSA/Cloud Run with async batch buffer queues in the FastAPI OTel proxy."
+    },
+    "CB-3": {
+      "curveball_id": "CB-3",
+      "name": "CISO CareCredit HIPAA PHI Inline Redaction Mandate",
+      "trigger_keywords": ["hipaa", "carecredit", "phi", "medical", "mrn", "icd-10", "ciso"],
+      "sprint_delta": 1,
+      "story_points_delta": 8,
+      "budget_delta_usd": 18000,
+      "revised_total_sprints": 4,
+      "affected_squads": ["SYF-SecOps-DLP-Squad"],
+      "architectural_remediation": "Augment FastAPI inline scrubber with compiled CareCredit HIPAA PHI regexes (MRN, ICD-10, provider NPI) and synchronous Model Armor DLP template inspection within the <25ms P95 SLA budget."
+    },
+    "CB-4": {
+      "curveball_id": "CB-4",
+      "name": "AWS ROSA OpenShift Capacity Freeze -> Google Cloud Run Private Subnets Pivot",
+      "trigger_keywords": ["rosa", "capacity freeze", "cloud run", "openshift freeze", "gcp", "serverless"],
+      "sprint_delta": -1,
+      "story_points_delta": -5,
+      "budget_delta_usd": -14000,
+      "revised_total_sprints": 2,
+      "affected_squads": ["SYF-Platform-Mesh-Squad"],
+      "architectural_remediation": "Pivot UBI9 container deployment from AWS ROSA OpenShift to Google Cloud Run Private Subnets with Direct VPC Egress and Cloud IAM Workload Identity, accelerating delivery by 1 full sprint and saving $14,000/yr in idle node capacity."
+    },
+    "CB-5": {
+      "curveball_id": "CB-5",
+      "name": "Developer Ticket Blocker on AI-STORY-102: Entra ID Introspection Latency (42ms > 25ms SLA)",
+      "trigger_keywords": ["blocker", "ai-story-102", "42ms", "latency", "introspection", "jwks", "entra"],
+      "sprint_delta": 0,
+      "story_points_delta": 3,
+      "budget_delta_usd": 0,
+      "revised_total_sprints": 3,
+      "affected_squads": ["SYF-AI-FinOps-Squad", "SYF-SecOps-DLP-Squad"],
+      "architectural_remediation": "Replace synchronous Entra ID OAuth2 token introspection call (42ms) with an in-memory/Redis asynchronous JWKS public key cache (300s TTL), reducing JWT auth verification overhead to 1.8ms and total proxy P95 latency to 14.2ms."
+    }
+  }
+}

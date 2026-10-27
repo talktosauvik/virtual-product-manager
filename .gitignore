@@ -1,0 +1,122 @@
+# ============================================================================
+# Synchrony Financial (SYF) Virtual Product Manager — Root .gitignore
+# ============================================================================
+
+# Local Development Iteration Log (Explicitly Excluded)
+dev iteration.md
+**/dev iteration.md
+dev_iteration.md
+**/dev_iteration.md
+
+# Environment Variables & Secrets (Never Commit)
+.env
+**/.env
+.env.*
+**/.env.*
+!.env.example
+!**/.env.example
+*.pem
+*-key.json
+credentials*.json
+my_env.tfvars
+.locust_env
+
+# Python Bytecode & Caches
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyc
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+**/dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+**/.venv/
+.venv*/
+**/.venv*/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Google Agents CLI & ADK Local State / Eval Traces
+.google-agents-cli/
+**/.google-agents-cli/
+.adk/
+**/.adk/
+.agents-cli-scripts/
+**/.agents-cli-scripts/
+**/artifacts/traces/
+**/artifacts/grade_results/
+deployment_metadata.json.lock
+**/deployment_metadata.json.lock
+.persist_vector_store
+.saved_chats
+tools/a2a-inspector/
+tests/load_test/.results/*.html
+tests/load_test/.results/*.csv
+
+# Test, Lint & Type-Checker Caches
+.pytest_cache/
+**/.pytest_cache/
+.ruff_cache/
+**/.ruff_cache/
+.mypy_cache/
+**/.mypy_cache/
+.ty/
+**/.ty/
+.hypothesis/
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+nosetests.xml
+
+# Terraform Local State
+.terraform*
+**/.terraform*
+.Terraform*
+*.tfstate
+*.tfstate.*
+
+# Logs, Temp & OS/IDE Files
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+tmp*
+/tmp
+.cache/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+**/node_modules/

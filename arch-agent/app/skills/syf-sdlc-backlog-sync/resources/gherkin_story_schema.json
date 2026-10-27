@@ -1,0 +1,65 @@
+{
+  "epic_key": "AI-EVAL-101",
+  "epic_title": "Synchrony Enterprise GenAI Evaluation & Observability Gateway (Langfuse Self-Hosted)",
+  "velocity_baseline_pts_per_sprint": 20,
+  "sprint_duration_weeks": 2,
+  "required_story_fields": [
+    "story_id",
+    "title",
+    "squad",
+    "story_points",
+    "sprint",
+    "bitbucket_branch",
+    "gherkin_acceptance_criteria"
+  ],
+  "standard_stories_template": [
+    {
+      "story_id": "AI-STORY-101",
+      "title": "Deploy Self-Hosted Langfuse v3 & ClickHouse Cluster on Synchrony Private Runtime",
+      "squad": "SYF-Platform-Mesh-Squad",
+      "story_points": 8,
+      "sprint": "Sprint 1",
+      "bitbucket_branch": "feature/AI-EVAL-101-langfuse-clickhouse-deploy",
+      "gherkin_acceptance_criteria": [
+        "Given the Synchrony private VPC runtime, When the Langfuse v3 and ClickHouse stateful sets are deployed, Then 100% of telemetry spans remain within Synchrony private subnets with zero internet egress.",
+        "Given a 5M to 50M monthly span ingestion load, When ClickHouse storage is queried, Then P95 query latency remains under 200ms."
+      ]
+    },
+    {
+      "story_id": "AI-STORY-102",
+      "title": "Implement FastAPI OpenTelemetry Collector Proxy with Entra ID Local JWKS Caching",
+      "squad": "SYF-AI-FinOps-Squad",
+      "story_points": 8,
+      "sprint": "Sprint 1",
+      "bitbucket_branch": "feature/AI-EVAL-101-otel-proxy-entraid-jwks",
+      "gherkin_acceptance_criteria": [
+        "Given an incoming LLM telemetry request with a W3C traceparent header and Entra ID Bearer JWT, When the proxy validates the token against its 300s local JWKS cache, Then authentication completes in under 2ms and total proxy P95 overhead stays below 25ms.",
+        "Given a missing or malformed traceparent header, When the proxy receives the payload, Then it generates a compliant W3C TraceContext ID before forwarding asynchronously."
+      ]
+    },
+    {
+      "story_id": "AI-STORY-103",
+      "title": "Build Inline PCI-DSS v4.0 (PAN/SSN) & CareCredit HIPAA (PHI/MRN) Redaction Middleware",
+      "squad": "SYF-SecOps-DLP-Squad",
+      "story_points": 8,
+      "sprint": "Sprint 2",
+      "bitbucket_branch": "feature/AI-EVAL-101-inline-pci-hipaa-scrubber",
+      "gherkin_acceptance_criteria": [
+        "Given a telemetry span containing a 16-digit PAN, 9-digit SSN, or CareCredit MRN, When the FastAPI sanitization middleware processes the JSON payload, Then all sensitive tokens are replaced with [REDACTED_PAN], [REDACTED_SSN], or [REDACTED_MRN] prior to persistence.",
+        "Given adversarial payloads attempting code injection, When sanitization executes via json.dumps and compiled regex, Then zero eval() calls are invoked."
+      ]
+    },
+    {
+      "story_id": "AI-STORY-104",
+      "title": "Configure Synchrony Envoy Service Mesh Sidecar & Mutual TLS (mTLS 1.3) Ingress",
+      "squad": "SYF-Platform-Mesh-Squad",
+      "story_points": 8,
+      "sprint": "Sprint 2",
+      "bitbucket_branch": "feature/AI-EVAL-101-envoy-service-mesh-mtls",
+      "gherkin_acceptance_criteria": [
+        "Given the Q1 deprecation of Kong Enterprise Gateway v3.4, When the evaluation gateway pod is scheduled with mesh.syf.bank/injected=true, Then Envoy sidecar proxies enforce strict mTLS 1.3 for all east-west traffic.",
+        "Given an unauthenticated client without a valid SYF mesh client certificate, When it attempts to connect to port 8080, Then the Envoy sidecar rejects the TLS handshake."
+      ]
+    }
+  ]
+}
