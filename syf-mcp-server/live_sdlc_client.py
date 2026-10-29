@@ -153,10 +153,12 @@ def _markdown_to_confluence_storage(
         ts = _utc_now_str()
         safe_comment = html.escape(version_comment or "Synchrony VPM Automated SDLC Sync")
         safe_author = html.escape(author)
+        ver_match = re.search(r'^version:\s*"?([0-9.]+)"?', md_text, re.MULTILINE)
+        doc_ver = f"v{ver_match.group(1)}" if ver_match else f"v{revision_number}"
         out.append(
             f'<ac:structured-macro ac:name="info">'
             f"<ac:rich-text-body>"
-            f"<p><strong>Synchrony VPM Live Document Revision: v{revision_number}</strong> | "
+            f"<p><strong>Synchrony VPM Live Document Revision: {doc_ver} (Confluence History #{revision_number})</strong> | "
             f"<strong>Updated:</strong> <code>{ts}</code> | "
             f"<strong>Author:</strong> <code>{safe_author}</code><br/>"
             f"<strong>Change Audit:</strong> {safe_comment}</p>"
@@ -272,6 +274,7 @@ class LiveAtlassianClient:
         self.confluence_space_key = (
             confluence_space_key or os.environ.get("CONFLUENCE_SPACE_KEY", "SD")
         ).strip()
+        self._confluence_meta_cache: dict[str, dict[str, Any]] = {}
 
     @property
     def api_token(self) -> str:
@@ -295,6 +298,65 @@ class LiveAtlassianClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
+
+    def get_live_document_metadata(self, document_name: str) -> dict[str, Any]:
+        """Dynamically resolve live Confluence Cloud or Jira Cloud URLs for a workspace document via Auth Manager."""
+        if document_name == "BACKLOG-AI-EVAL-101.json":
+            return {
+                "live_jira_epic_key": "SYF-5",
+                "jira_epic_url": f"https://{self.domain}/browse/SYF-5",
+                "jira_board_url": f"https://{self.domain}/jira/software/projects/{self.jira_project_key}/boards/1",
+                "provider": "Atlassian Jira Cloud (Live REST API via Auth Manager)",
+            }
+        if document_name in self._confluence_meta_cache:
+            return dict(self._confluence_meta_cache[document_name])
+
+        canonical_title = CONFLUENCE_TITLE_MAP.get(document_name, document_name)
+        target_space = self.confluence_space_key
+        if self.is_configured:
+            try:
+                query = urllib.parse.urlencode(
+                    {
+                        "spaceKey": target_space,
+                        "title": canonical_title,
+                        "expand": "version",
+                    }
+                )
+                search_url = f"https://{self.domain}/wiki/rest/api/content?{query}"
+                req = urllib.request.Request(
+                    search_url, headers=self._headers(), method="GET"
+                )
+                with urllib.request.urlopen(req, timeout=6.0) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    results = data.get("results", [])
+                    if results:
+                        page = results[0]
+                        page_id = str(page.get("id", ""))
+                        ver_num = int(page.get("version", {}).get("number", 1))
+                        webui = page.get("_links", {}).get("webui", "")
+                        live_url = (
+                            f"https://{self.domain}/wiki{webui}"
+                            if webui
+                            else f"https://{self.domain}/wiki/spaces/{target_space}/pages/{page_id}"
+                        )
+                        meta = {
+                            "page_id": page_id,
+                            "confluence_revision": ver_num,
+                            "space_key": target_space,
+                            "confluence_url": live_url,
+                            "provider": "Atlassian Confluence Cloud (Live REST API via Auth Manager)",
+                        }
+                        self._confluence_meta_cache[document_name] = meta
+                        return dict(meta)
+            except Exception as exc:
+                logger.warning("Confluence metadata lookup for %s failed: %s", document_name, exc)
+
+        fallback_meta = {
+            "space_key": target_space,
+            "confluence_url": f"https://{self.domain}/wiki/spaces/{target_space}",
+            "provider": "Atlassian Confluence Cloud (Space Link via Auth Manager)",
+        }
+        return fallback_meta
 
     # ------------------------------------------------------------------
     # Confluence Cloud REST API (Create or Update Page with Version Diff)
@@ -379,16 +441,19 @@ class LiveAtlassianClient:
                         if webui
                         else f"https://{self.domain}/wiki/spaces/{target_space}/pages/{page_id}"
                     )
-                    return {
+                    result_meta = {
                         "page_id": str(page_id),
                         "previous_version": current_version,
                         "version": next_version,
+                        "confluence_revision": next_version,
                         "version_label": f"v{next_version} (diff from v{current_version})",
                         "space_key": target_space,
                         "confluence_url": live_url,
                         "history_diff_url": f"https://{self.domain}/wiki/pages/diffpagesbyversion.action?pageId={page_id}&selectedPageVersions={next_version}&selectedPageVersions={current_version}",
                         "provider": "Atlassian Confluence Cloud (Live REST API via Auth Manager)",
                     }
+                    self._confluence_meta_cache[title] = result_meta
+                    return result_meta
             else:
                 storage_xhtml = _markdown_to_confluence_storage(
                     markdown_content,
@@ -418,17 +483,23 @@ class LiveAtlassianClient:
                     created = json.loads(post_resp.read().decode("utf-8"))
                     page_id = created.get("id", "")
                     webui = created.get("_links", {}).get("webui", "")
-                    return {
+                    live_url = (
+                        f"https://{self.domain}/wiki{webui}"
+                        if webui
+                        else f"https://{self.domain}/wiki/spaces/{target_space}/pages/{page_id}"
+                    )
+                    result_meta = {
                         "page_id": str(page_id),
                         "previous_version": 0,
                         "version": 1,
+                        "confluence_revision": 1,
                         "version_label": "v1 (Initial Baseline)",
                         "space_key": target_space,
-                        "confluence_url": f"https://{self.domain}/wiki{webui}"
-                        if webui
-                        else f"https://{self.domain}/wiki/spaces/{target_space}/pages/{page_id}",
+                        "confluence_url": live_url,
                         "provider": "Atlassian Confluence Cloud (Live REST API via Auth Manager)",
                     }
+                    self._confluence_meta_cache[title] = result_meta
+                    return result_meta
         except Exception as exc:
             logger.warning("Confluence Cloud live API call failed: %s", exc)
             return None
@@ -745,6 +816,17 @@ class LiveBitbucketClient:
     def _auth_header(self) -> str:
         return f"Bearer {self.access_token}"
 
+    def get_live_repository_metadata(self) -> dict[str, Any]:
+        """Dynamically resolve Bitbucket Cloud repository and PR URLs via Auth Manager."""
+        repo_url = f"https://bitbucket.org/{self.workspace}/{self.repo_slug}"
+        return {
+            "workspace": self.workspace,
+            "repo_slug": self.repo_slug,
+            "repository_url": repo_url,
+            "pull_requests_url": f"{repo_url}/pull-requests/",
+            "provider": "Bitbucket Cloud (Live REST API v2.0 via Auth Manager)",
+        }
+
     def commit_files_and_open_pr(
         self,
         branch_name: str,
@@ -1031,26 +1113,33 @@ def _search_reddit_json_api(query: str, max_results: int = 3) -> list[dict[str, 
 
     # Automatic fallback to Hacker News Algolia Developer Community API (never blocks GCP datacenter IPs)
     try:
-        hn_params = urllib.parse.urlencode(
-            {"query": tech_q, "tags": "story", "hitsPerPage": str(max_results)}
-        )
-        hn_req = urllib.request.Request(
-            f"https://hn.algolia.com/api/v1/search?{hn_params}",
-            headers={"User-Agent": "Synchrony-VPM-Architecture-Agent/1.0"},
-        )
-        hn_data = _read_http_json(hn_req, timeout=2.0)
-        hits = hn_data.get("hits", [])[:max_results]
-        return [
-            {
-                "source": "HackerNews / Reddit Developer Community API",
-                "title": hit.get("title", ""),
-                "url": hit.get("url")
-                or f"https://news.ycombinator.com/item?id={hit.get('objectID', '')}",
-                "upvotes": hit.get("points", 0),
-                "num_comments": hit.get("num_comments", 0),
-            }
-            for hit in hits
-        ]
+        short_q = _extract_tech_keywords(query, max_terms=2)
+        first_q = _extract_tech_keywords(query, max_terms=1)
+        for hn_q in (tech_q, short_q, first_q):
+            if not hn_q:
+                continue
+            hn_params = urllib.parse.urlencode(
+                {"query": hn_q, "tags": "story", "hitsPerPage": str(max_results)}
+            )
+            hn_req = urllib.request.Request(
+                f"https://hn.algolia.com/api/v1/search?{hn_params}",
+                headers={"User-Agent": "Synchrony-VPM-Architecture-Agent/1.0"},
+            )
+            hn_data = _read_http_json(hn_req, timeout=2.0)
+            hits = hn_data.get("hits", [])[:max_results]
+            if hits:
+                return [
+                    {
+                        "source": "HackerNews / Reddit Developer Community API",
+                        "title": hit.get("title", ""),
+                        "url": hit.get("url")
+                        or f"https://news.ycombinator.com/item?id={hit.get('objectID', '')}",
+                        "upvotes": hit.get("points", 0),
+                        "num_comments": hit.get("num_comments", 0),
+                    }
+                    for hit in hits
+                ]
+        return []
     except Exception as exc:
         logger.debug("Community API fallback skipped: %s", exc)
         return []
@@ -1059,8 +1148,10 @@ def _search_reddit_json_api(query: str, max_results: int = 3) -> list[dict[str, 
 def resolve_dynamic_curveball_intelligence(
     curveball_description: str,
     baseline_sprints: int = 6,
-    baseline_story_points: int = 34,
+    baseline_story_points: int = 192,
     baseline_annual_tco_usd: int = 76000,
+    velocity_sp_per_sprint: int = 32,
+    cost_per_sp_usd: int = 500,
 ) -> dict[str, Any]:
     """Execute parallel StackOverflow API + GitHub Issues API + Reddit/Community JSON API + Google Search Grounding in <2.2s."""
     search_keywords = _extract_tech_keywords(curveball_description, max_terms=4)
@@ -1106,13 +1197,15 @@ def resolve_dynamic_curveball_intelligence(
             "Self-Hosted Langfuse v3 + OpenTelemetry + FastAPI PCI/HIPAA Redaction Proxy (`<25ms` P95 SLA) roadmap:\n\n"
             f"UNSCRIPTED CURVEBALL: {curveball_description}\n\n"
             f"LIVE STACKOVERFLOW / GITHUB ISSUES / REDDIT API FINDINGS:\n{community_context}\n\n"
+            f"AGILE VELOCITY & FINANCIAL MODEL:\n"
+            f"- Squad Velocity: {velocity_sp_per_sprint} Story Points per 2-week sprint (4-5 developers)\n"
+            f"- Engineering Cost Rate: ${cost_per_sp_usd} per Story Point (${velocity_sp_per_sprint * cost_per_sp_usd:,} per 2-week sprint)\n"
+            f"- Baseline Delivery Plan: {baseline_sprints} Sprints ({baseline_story_points} Total Story Points)\n\n"
             "Use Google Search grounding and the community API findings above to produce a realistic, "
             "non-hallucinated engineering impact assessment in strict JSON with these exact keys:\n"
             "- curveball_title (string, concise executive title)\n"
-            "- sprint_delta (integer between -1 and 3)\n"
-            "- story_points_delta (integer between 5 and 21)\n"
-            "- one_time_engineering_budget_delta_usd (integer between 8000 and 45000)\n"
-            "- recurring_annual_tco_delta_usd (integer between -15000 and 30000)\n"
+            "- story_points_delta (integer, choose 32 for a 1-sprint single-squad refactoring such as OpenTelemetry gRPC -> HTTP/protobuf exporter swap, or 64 for a 2-sprint multi-squad migration)\n"
+            "- recurring_annual_tco_delta_usd (integer between 0 and 12000 for recurring compute/collector overhead)\n"
             "- architectural_remediation (array of 3 concrete engineering actions referencing real StackOverflow/GitHub/Reddit/CNCF patterns)\n"
             "- story_title (string, Jira story summary)\n"
             "- gherkin_given (string)\n"
@@ -1148,11 +1241,11 @@ def resolve_dynamic_curveball_intelligence(
     except Exception as exc:
         logger.warning("Dynamic Gemini + Google Search synthesis fallback: %s", exc)
 
-    sprint_delta = int(synthesized.get("sprint_delta", 1))
-    points_delta = int(synthesized.get("story_points_delta", 8))
-    one_time_cost = int(
-        synthesized.get("one_time_engineering_budget_delta_usd", 16000)
-    )
+    raw_points_delta = int(synthesized.get("story_points_delta", 32))
+    # Snap to nearest sprint increment (32 SP = 1 sprint, or 64 SP = 2 sprints) for transparent Agile math
+    points_delta = 64 if raw_points_delta >= 48 else 32
+    sprint_delta = max(1, round(points_delta / velocity_sp_per_sprint))
+    one_time_cost = points_delta * cost_per_sp_usd
     recurring_delta = int(synthesized.get("recurring_annual_tco_delta_usd", 6000))
     curveball_title = synthesized.get(
         "curveball_title",
@@ -1187,12 +1280,13 @@ def resolve_dynamic_curveball_intelligence(
         "curveball_code": "CB-DYNAMIC",
         "curveball_title": curveball_title,
         "discovery_mode": "Live Parallel Developer Community APIs (StackOverflow v2.3 + GitHub Issues + Reddit JSON) + Vertex AI Google Search Grounding",
+        "agile_velocity_formula": f"{velocity_sp_per_sprint} Story Points = 1 Sprint (2 weeks, 4-5 devs) = ${velocity_sp_per_sprint * cost_per_sp_usd:,} (${cost_per_sp_usd}/SP)",
         "baseline_sprints": baseline_sprints,
         "revised_sprints": max(1, baseline_sprints + sprint_delta),
         "sprint_delta": f"{sprint_delta:+d} sprint(s) ({baseline_sprints} -> {max(1, baseline_sprints + sprint_delta)} sprints)",
         "baseline_story_points": baseline_story_points,
         "revised_story_points": baseline_story_points + points_delta,
-        "story_points_delta": f"+{points_delta} story points",
+        "story_points_delta": f"+{points_delta} story points ({points_delta} SP / {velocity_sp_per_sprint} SP per sprint = +{sprint_delta} sprint)",
         "one_time_engineering_budget_delta_usd": one_time_cost,
         "revised_annual_tco_usd": baseline_annual_tco_usd + recurring_delta,
         "architectural_remediation": remediation_list,
@@ -1221,7 +1315,7 @@ def resolve_dynamic_curveball_intelligence(
         "hitl_approval_required": True,
         "hitl_prompt": (
             f"Human-in-the-Loop Gate (S5): Please approve the `{curveball_title}` architectural "
-            f"remediation ({sprint_delta:+d} sprint(s), +{points_delta} story points, +${one_time_cost:,} engineering delta) "
+            f"remediation ({sprint_delta:+d} sprint(s), +{points_delta} story points at {velocity_sp_per_sprint} SP/sprint, +${one_time_cost:,} engineering delta) "
             "before Alex commits the new linked Jira story to `SYF Sprint 1` (`SYF-5`), bumps Confluence (`v1 -> v2 -> v3`), "
             "and scaffolds the Bitbucket Pull Request."
         ),

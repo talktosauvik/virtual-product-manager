@@ -82,7 +82,7 @@ def query_vendor_cost_benchmarks(
             elif vid == "arize_ax" and spans_m == 50.0:
                 total_tco = 1085000.0
             elif vid == "braintrust" and spans_m == 5.0:
-                total_tco = 147000.0
+                total_tco = 135000.0
             elif vid == "braintrust" and spans_m == 50.0:
                 total_tco = 804000.0
             elif vid == "langfuse" and spans_m == 5.0:
@@ -133,25 +133,29 @@ def query_vendor_cost_benchmarks(
 # ============================================================================
 @mcp.tool()
 def get_architecture_standards(topic_filter: str = "all") -> dict[str, Any]:
-    """Retrieve Synchrony Financial's authoritative CISO/CTO Enterprise Architecture standards (PCI-DSS v4.0 zero-egress, CareCredit HIPAA PHI redaction, Microsoft Entra ID JWKS caching, Kong Q1 deprecation -> Envoy Service Mesh mandate, and Curveball blast-radius catalog)."""
+    """Retrieve Synchrony Financial's authoritative CISO/CTO Enterprise Architecture standards (baseline_policies for v1.0 baseline review and executive_curveball_policies for curveball impact assessment)."""
     standards = store.read_json(
         "seed_data/architecture_standards.json",
         local_fallback=LOCAL_SEED_DIR / "architecture_standards.json",
     )
     if topic_filter and topic_filter.lower() != "all":
         key = topic_filter.lower()
+        all_policies = {
+            **standards.get("baseline_policies", {}),
+            **standards.get("mandatory_policies", {}),
+        }
         filtered_policies = {
             k: v
-            for k, v in standards.get("mandatory_policies", {}).items()
+            for k, v in all_policies.items()
             if key in k.lower() or key in str(v).lower()
         }
         if filtered_policies:
             return {
-                "organization": standards["organization"],
-                "version": standards["version"],
+                "organization": standards.get("organization"),
+                "version": standards.get("version"),
                 "filtered_topic": topic_filter,
-                "mandatory_policies": filtered_policies,
-                "curveball_catalog": standards.get("curveball_catalog", {}),
+                "baseline_policies": filtered_policies,
+                "agile_delivery_model": standards.get("agile_delivery_model", {}),
             }
     return standards
 
@@ -161,17 +165,44 @@ def get_architecture_standards(topic_filter: str = "all") -> dict[str, Any]:
 # ============================================================================
 @mcp.tool()
 def list_workspace_documents() -> dict[str, Any]:
-    """List all living product & engineering files in the Synchrony GCS Workspace (PRD-AI-EVAL-101.md, ADR-001-Eval-Gateway.md, BACKLOG-AI-EVAL-101.json, and scaffolded_code/*)."""
+    """List all living product & engineering files in the Synchrony Workspace along with their live Confluence Cloud, Jira Cloud, and Bitbucket Cloud URLs resolved via Auth Manager."""
+    docs = store.list_workspace_documents()
+    enriched_docs: list[dict[str, Any]] = []
+    for d in docs:
+        doc_name = d.get("document_name") or d.get("name", "")
+        if not doc_name or doc_name.endswith(".bak"):
+            continue
+        if d.get("gcs_path", "").startswith("scaffolded_code/"):
+            meta = live_bitbucket.get_live_repository_metadata()
+        else:
+            meta = live_atlassian.get_live_document_metadata(doc_name)
+        enriched_docs.append(
+            {
+                "document_name": doc_name,
+                "size_bytes": d.get("size_bytes"),
+                "updated_at": d.get("updated_at"),
+                **meta,
+            }
+        )
     return {
-        "workspace_bucket": f"gs://{store.bucket_name}",
-        "documents": store.list_workspace_documents(),
+        "confluence_space_key": live_atlassian.confluence_space_key,
+        "jira_project_key": live_atlassian.jira_project_key,
+        "bitbucket_repository": live_bitbucket.get_live_repository_metadata(),
+        "documents": enriched_docs,
     }
 
 
 @mcp.tool()
 def get_workspace_document(document_name: str = "PRD-AI-EVAL-101.md") -> dict[str, Any]:
-    """Read the full content of a living workspace document (e.g., PRD-AI-EVAL-101.md, ADR-001-Eval-Gateway.md, or BACKLOG-AI-EVAL-101.json)."""
-    return store.get_workspace_document(document_name)
+    """Read the full content of a living workspace document (e.g., PRD-AI-EVAL-101.md, ADR-001-Eval-Gateway.md, or BACKLOG-AI-EVAL-101.json) along with its live Confluence Cloud or Jira Cloud URL resolved via Auth Manager."""
+    doc = store.get_workspace_document(document_name)
+    live_meta = live_atlassian.get_live_document_metadata(document_name)
+    return {
+        "document_name": doc.get("document_name", document_name),
+        "content": doc.get("content", ""),
+        "sections": doc.get("sections", []),
+        **live_meta,
+    }
 
 
 @mcp.tool()
@@ -528,7 +559,7 @@ def sync_sdlc_ticket_blocker(
         live_jira_key,
         f"[CONTINUOUS SDLC BLOCKER RESOLVED BY ALEX & MARCUS] "
         f"Blocker: {blocker_summary} -> Resolution Architecture: {resolution_architecture} "
-        f"(Verified 1.8ms P95 auth latency, 14.2ms total gateway P95 latency, 0 sprint slip).",
+        f"(Verified 1.8ms P95 auth latency, 13.8ms total gateway P95 latency, 0 sprint slip).",
     )
 
     for story in backlog.get("stories", []):
@@ -580,7 +611,7 @@ def sync_sdlc_ticket_blocker(
         "live_confluence_sync": live_conf,
         "schedule_slip_sprints": 0,
         "new_p95_auth_latency_ms": 1.8,
-        "total_proxy_p95_latency_ms": 14.2,
+        "total_proxy_p95_latency_ms": 13.8,
         "prd_surgical_diff": diff_result,
     }
 
@@ -650,7 +681,7 @@ async def jira_portal_handler(request: Request) -> HTMLResponse:
           Epic: <a href="{PUBLIC_BASE_URL}/jira/browse/{html.escape(backlog.get('epic_key', 'AI-EVAL-101'))}">{html.escape(backlog.get('epic_key', 'AI-EVAL-101'))}</a> |
           Sponsor: <strong>{html.escape(str(backlog.get('approved_by', 'Dan Weis (VP of AI Innovation)')))}</strong> |
           Status: <strong>{html.escape(str(backlog.get('status', 'COMMITTED')))}</strong> |
-          Total Story Points: <strong>{html.escape(str(backlog.get('total_story_points', 34)))}</strong>
+          Total Story Points: <strong>{html.escape(str(backlog.get('total_story_points', 192)))}</strong>
         </p>
       </div>
       <div>

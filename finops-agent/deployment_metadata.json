@@ -4,5 +4,16 @@
   "deployment_target": "agent_runtime",
   "is_a2a": true,
   "language": "python",
-  "agent_directory": "app"
+  "agent_directory": "app",
+  "pending_operation": {
+    "owner_id": "d7c61861d2b5440ea963eb365360df0b",
+    "state": "running",
+    "operation_name": "projects/121190797389/locations/us-central1/reasoningEngines/1052078971031650304/operations/6351863774420402176",
+    "project": "vertexai-l300-capstone",
+    "location": "us-central1",
+    "deployment_target": "agent_runtime",
+    "started_at": "2026-10-29T03:57:54.011165+00:00",
+    "owner_pid": 7216,
+    "owner_host": "cs-388586929289-default"
+  }
 }

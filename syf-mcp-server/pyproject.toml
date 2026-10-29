@@ -9,6 +9,7 @@ dependencies = [
     "google-cloud-storage>=2.18.0",
     "google-auth>=2.35.0",
     "google-genai>=1.0.0",
+    "google-cloud-agentidentitycredentials>=0.1.2",
     "starlette>=0.40.0,<1.0.0",
     "uvicorn>=0.32.0",
 ]

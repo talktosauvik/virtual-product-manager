@@ -1,26 +1,30 @@
 {
   "epic_key": "AI-EVAL-101",
+  "live_jira_epic_key": "SYF-5",
   "epic_title": "Synchrony Enterprise GenAI Evaluation & Observability Gateway (Langfuse Self-Hosted)",
-  "epic_url": "https://syf-mcp-server-121190797389.us-central1.run.app/jira/browse/AI-EVAL-101",
   "status": "PENDING_APPROVAL",
   "human_approved": false,
   "approved_by": null,
   "version": "1.0",
+  "squad_size_developers": 5,
+  "velocity_story_points_per_sprint": 32,
+  "cost_per_story_point_usd": 500,
+  "cost_per_sprint_usd": 16000,
   "baseline_sprints": 6,
-  "curveball_sprint_delta": 2,
-  "total_sprints": 8,
-  "total_story_points": 34,
+  "curveball_sprint_delta": 0,
+  "total_sprints": 6,
+  "total_story_points": 192,
   "annual_tco_selected_usd": 76000,
   "annual_savings_vs_arize_usd": 109000,
   "stories": [
     {
       "story_id": "AI-STORY-101",
+      "live_jira_key": "SYF-6",
       "title": "Deploy Self-Hosted Langfuse v3 & ClickHouse Cluster in Synchrony Private VPC (ROSA OpenShift)",
       "squad": "SYF-Platform-Mesh-Squad",
-      "story_points": 8,
+      "story_points": 48,
       "sprint": "Sprint 1-2",
       "status": "READY_FOR_SPRINT",
-      "jira_url": "https://syf-mcp-server-121190797389.us-central1.run.app/jira/browse/AI-STORY-101",
       "bitbucket_branch": "feature/AI-EVAL-101-langfuse-clickhouse-deploy",
       "gherkin_acceptance_criteria": [
         "Given the Synchrony private VPC runtime, When Langfuse v3 and ClickHouse containers are deployed on UBI9 (UID 1001), Then 100% of telemetry spans remain inside Synchrony private subnets with zero external egress.",
@@ -29,26 +33,26 @@
     },
     {
       "story_id": "AI-STORY-102",
-      "title": "Build FastAPI OpenTelemetry W3C TraceContext Proxy with Entra ID JWKS Caching",
+      "live_jira_key": "SYF-7",
+      "title": "Build FastAPI OpenTelemetry W3C TraceContext Collector Proxy with Microsoft Entra ID OAuth 2.0 Auth",
       "squad": "SYF-AI-FinOps-Squad",
-      "story_points": 8,
-      "sprint": "Sprint 3-4",
+      "story_points": 48,
+      "sprint": "Sprint 2-3",
       "status": "READY_FOR_SPRINT",
-      "jira_url": "https://syf-mcp-server-121190797389.us-central1.run.app/jira/browse/AI-STORY-102",
-      "bitbucket_branch": "feature/AI-EVAL-101-otel-proxy-entraid-jwks",
+      "bitbucket_branch": "feature/AI-EVAL-101-otel-proxy-entraid-auth",
       "gherkin_acceptance_criteria": [
-        "Given an incoming LLM telemetry request with a W3C traceparent header and Entra ID Bearer JWT, When the proxy validates the token against its 300s local JWKS cache, Then auth completes in <2ms and total proxy P95 overhead stays <25ms.",
+        "Given an incoming LLM telemetry request with a W3C traceparent header and Entra ID Bearer JWT, When the proxy validates the token, Then total proxy P95 overhead stays strictly <25ms.",
         "Given a missing traceparent header, When the proxy ingests the span, Then it synthesizes a compliant W3C TraceContext ID before forwarding asynchronously."
       ]
     },
     {
       "story_id": "AI-STORY-103",
-      "title": "Implement Safe Inline PCI-DSS v4.0 (PAN/SSN) & CareCredit HIPAA (MRN) Regex Scrubber",
+      "live_jira_key": "SYF-8",
+      "title": "Implement Safe Inline PCI-DSS v4.0 (PAN/SSN) & CareCredit HIPAA (MRN/ICD-10) Regex + Model Armor Scrubber",
       "squad": "SYF-SecOps-DLP-Squad",
-      "story_points": 8,
-      "sprint": "Sprint 5-6",
+      "story_points": 48,
+      "sprint": "Sprint 4-5",
       "status": "READY_FOR_SPRINT",
-      "jira_url": "https://syf-mcp-server-121190797389.us-central1.run.app/jira/browse/AI-STORY-103",
       "bitbucket_branch": "feature/AI-EVAL-101-inline-pci-hipaa-scrubber",
       "gherkin_acceptance_criteria": [
         "Given a telemetry span containing a 16-digit PAN, 9-digit SSN, or CareCredit MRN, When sanitize_telemetry_payload() executes via json.dumps and compiled regex, Then sensitive tokens are replaced with [REDACTED_PAN], [REDACTED_SSN], and [REDACTED_MRN].",
@@ -57,35 +61,25 @@
     },
     {
       "story_id": "AI-STORY-104",
-      "title": "Decouple Deprecated Kong Gateway v3.4 & Configure Internal Envoy Service Mesh Sidecar (+2 Sprints Curveball)",
+      "live_jira_key": "SYF-9",
+      "title": "Configure Baseline Kong Enterprise API Gateway v3.4 Ingress, TLS 1.3 Termination & Rate Limiting",
       "squad": "SYF-Platform-Mesh-Squad",
-      "story_points": 10,
-      "sprint": "Sprint 7-8",
+      "story_points": 48,
+      "sprint": "Sprint 5-6",
       "status": "READY_FOR_SPRINT",
-      "jira_url": "https://syf-mcp-server-121190797389.us-central1.run.app/jira/browse/AI-STORY-104",
-      "bitbucket_branch": "feature/AI-EVAL-101-envoy-service-mesh-sidecar",
+      "bitbucket_branch": "feature/AI-EVAL-101-baseline-gateway-ingress",
       "gherkin_acceptance_criteria": [
-        "Given Q1 Kong Enterprise Gateway v3.4 deprecation, When OpenShift pods are deployed with mesh.syf.bank/injected: 'true', Then all east-west OTel trace spans route through Envoy sidecars with mTLS 1.3.",
-        "Given service mesh ingress, When telemetry spans are ingested, Then zero plain-text token leakage occurs in container logs."
+        "Given North-South evaluation gateway traffic, When requests traverse the API Gateway ingress tier, Then TLS 1.3 termination and per-tenant rate limits are enforced with <25ms P95 latency.",
+        "Given internal service telemetry, When spans are forwarded to the FastAPI OTel Collector Proxy, Then zero plain-text token leakage occurs in container logs."
       ]
     }
   ],
   "committed_jira_tickets": [
-    "AI-EVAL-101",
-    "AI-STORY-101",
-    "AI-STORY-102",
-    "AI-STORY-103",
-    "AI-STORY-104"
+    "SYF-5",
+    "SYF-6",
+    "SYF-7",
+    "SYF-8",
+    "SYF-9"
   ],
-  "confluence_url": "https://syf-mcp-server-121190797389.us-central1.run.app/confluence/display/AIPLAT/PRD-AI-EVAL-101",
-  "repository_url": "https://syf-mcp-server-121190797389.us-central1.run.app/bitbucket/projects/AIPLAT/repos/syf-eval-gateway",
-  "bitbucket_prs": [
-    {
-      "story_id": "AI-STORY-101",
-      "branch_name": "feature/AI-EVAL-101-eval-gateway-mvp",
-      "pr_title": "feat(eval-gateway): scaffold OpenShift UBI9 FastAPI OTel+DLP proxy with Envoy Service Mesh",
-      "pr_url": "https://syf-mcp-server-121190797389.us-central1.run.app/bitbucket/projects/AIPLAT/repos/syf-eval-gateway/pull-requests/101",
-      "repo_url": "https://syf-mcp-server-121190797389.us-central1.run.app/bitbucket/projects/AIPLAT/repos/syf-eval-gateway"
-    }
-  ]
+  "bitbucket_prs": []
 }

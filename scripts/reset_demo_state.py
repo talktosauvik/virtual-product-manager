@@ -23,7 +23,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR / "syf-mcp-server"))
 
 from gcs_store import LOCAL_SEED_DIR, SyfGcsWorkspaceStore  # noqa: E402
-from live_sdlc_client import LiveAtlassianClient  # noqa: E402
+from live_sdlc_client import LiveAtlassianClient, LiveBitbucketClient  # noqa: E402
 
 PROTECTED_JIRA_KEYS = {"SYF-1", "SYF-2", "SYF-3", "SYF-4", "SYF-5", "SYF-6", "SYF-7", "SYF-8", "SYF-9"}
 
@@ -47,6 +47,14 @@ def reset_gcs_and_confluence(sync_confluence: bool = True) -> dict[str, str]:
         "workspace_artifacts/BACKLOG-AI-EVAL-101.json", backlog_data
     )
 
+    for seed_json_name in ("architecture_standards.json", "eval_vendor_benchmarks.json"):
+        seed_path = LOCAL_SEED_DIR / seed_json_name
+        if seed_path.exists():
+            seed_obj = json.loads(seed_path.read_text(encoding="utf-8"))
+            restored[seed_json_name] = store.write_json(
+                f"seed_data/{seed_json_name}", seed_obj
+            )
+
     if sync_confluence:
         atlassian = LiveAtlassianClient()
         if atlassian.is_configured:
@@ -56,8 +64,8 @@ def reset_gcs_and_confluence(sync_confluence: bool = True) -> dict[str, str]:
                     title=doc_name,
                     markdown_content=content,
                     space_key="SD",
-                    version_comment="Reset to clean DRAFT Baseline (Kong v3.4 Ingress) for next live demo run",
-                    author="Alex (vpm-agent Demo Reset)",
+                    version_comment="Initial Baseline Architecture (Kong Enterprise API Gateway v3.4 Ingress — Pending FinOps & CISO Review)",
+                    author="Dan Weis & Alex (SYF AI Platform)",
                 )
                 if conf_res:
                     restored[f"Confluence:{doc_name}"] = (
@@ -72,6 +80,15 @@ def prune_rehearsal_jira_tickets() -> list[str]:
         return []
     deleted: list[str] = []
     try:
+        # Also reset Master Epic SYF-5 back to pre-curveball 6-sprint baseline
+        atlassian.update_anchor_epic(
+            anchor_epic_key="SYF-5",
+            logical_epic_key="AI-EPIC-101",
+            epic_title="Synchrony Enterprise AI Evaluation & Governance Gateway (Baseline v1)",
+            executive_sponsor="Dan Weis (SVP AI Platform)",
+            target_sprints=6,
+            approved_budget_usd=76000,
+        )
         jql_url = f"https://{atlassian.domain}/rest/api/3/search/jql?jql=project%3DSYF&maxResults=50&fields=key,summary"
         req = urllib.request.Request(jql_url, headers=atlassian._headers(), method="GET")
         with urllib.request.urlopen(req, timeout=10.0) as resp:
@@ -96,6 +113,43 @@ def prune_rehearsal_jira_tickets() -> list[str]:
     return deleted
 
 
+def decline_open_bitbucket_prs() -> list[int]:
+    bb = LiveBitbucketClient()
+    if not bb.is_configured:
+        return []
+    declined: list[int] = []
+    api_base = f"https://api.bitbucket.org/2.0/repositories/{bb.workspace}/{bb.repo_slug}"
+    try:
+        list_req = urllib.request.Request(
+            f"{api_base}/pullrequests?state=OPEN",
+            headers={
+                "Authorization": bb._auth_header(),
+                "Accept": "application/json",
+            },
+            method="GET",
+        )
+        with urllib.request.urlopen(list_req, timeout=10.0) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            for pr in data.get("values", []):
+                pr_id = pr.get("id")
+                if pr_id:
+                    dec_req = urllib.request.Request(
+                        f"{api_base}/pullrequests/{pr_id}/decline",
+                        data=b"{}",
+                        headers={
+                            "Authorization": bb._auth_header(),
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                        },
+                        method="POST",
+                    )
+                    with urllib.request.urlopen(dec_req, timeout=10.0):
+                        declined.append(int(pr_id))
+    except Exception as exc:
+        print(f"Warning: Bitbucket open PR cleanup skipped: {exc}")
+    return declined
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Reset Synchrony VPM Demo State")
     parser.add_argument(
@@ -111,13 +165,15 @@ def main() -> None:
     args = parser.parse_args()
 
     restored = reset_gcs_and_confluence(sync_confluence=not args.no_confluence)
-    pruned = prune_rehearsal_jira_tickets() if args.prune_rehearsal_jira else []
+    pruned = prune_rehearsal_jira_tickets()
+    declined_prs = decline_open_bitbucket_prs()
     print(
         json.dumps(
             {
                 "status": "DEMO_STATE_RESET_COMPLETE",
                 "restored_artifacts": restored,
                 "pruned_rehearsal_jira_tickets": pruned,
+                "declined_open_bitbucket_prs": declined_prs,
                 "protected_baseline_jira_tickets": sorted(PROTECTED_JIRA_KEYS - {"SYF-1", "SYF-2", "SYF-3", "SYF-4"}),
             },
             indent=2,

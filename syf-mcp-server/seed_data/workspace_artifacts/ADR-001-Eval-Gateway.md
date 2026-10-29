@@ -1,8 +1,8 @@
 ---
 document_id: ADR-001-Eval-Gateway
-title: "ADR-001: Selection of Self-Hosted Langfuse Enterprise & FastAPI OTel Sanitization Proxy"
+title: "ADR-001: Dual-Cloud OpenTelemetry & Zero-PII Architecture (Langfuse v3 Self-Hosted)"
 owner: Marcus (SYF Enterprise Architecture Specialist) & Morgan (SYF FinOps Analyst)
-status: PROPOSED
+status: DRAFT
 version: "1.0"
 ---
 
@@ -13,21 +13,20 @@ Synchrony Financial requires an enterprise-grade GenAI evaluation and OpenTeleme
 
 ## 2. FinOps vs. Security Trade-Off Analysis (Morgan vs. Marcus)
 - **FinOps Perspective (Morgan)**:
-  - SaaS per-span pricing models create severe financial exposure at Synchrony scale. **Arize AX Enterprise** costs **$185,000/yr** at 5M spans/month and balloons to **$1,085,000/yr** at 50M spans/month.
-  - **Self-Hosted Langfuse Enterprise** eliminates per-span fees (`$36,000/yr` base license + `$40,000/yr` ROSA ClickHouse compute = **`$76,000/yr`** at 5M spans/mo, and **`$130,000/yr`** at 50M spans/mo), delivering **$109,000/yr to $955,000/yr in net annual FinOps savings**.
+  - Usage-based SaaS per-span pricing creates severe financial exposure at Synchrony scale. **Arize AX Enterprise** costs **$185,000/yr** at 5M spans/month and balloons to **$1,085,000/yr** at 50M spans/month; **Braintrust Enterprise** costs **$135,000/yr** at 5M spans/month and **$804,000/yr** at 50M spans/month.
+  - **Self-Hosted Langfuse Enterprise v3** eliminates per-span ingestion fees (`$36,000/yr` base license + `$40,000/yr` ROSA ClickHouse compute = **`$76,000/yr`** at 5M spans/mo, and **`$130,000/yr`** at 50M spans/mo), delivering **$109,000/yr to $955,000/yr in net annual FinOps savings**.
 - **Enterprise Architecture & CISO Perspective (Marcus)**:
-  - **Arize AX (Multi-Tenant SaaS)** is **DISQUALIFIED** under policy `SYF-SEC-PCI-001` due to external SaaS egress of Tier-1 Cardholder Data (`PAN`, `SSN`) and CareCredit PHI.
-  - **Braintrust (Hybrid)** poses control-plane metadata egress risk and costs `$147,000/yr`–`$804,000/yr`.
-  - **Self-Hosted Langfuse Enterprise** deployed inside Synchrony's private VPC satisfies 100% of CISO zero-egress, Entra ID OAuth 2.0, and `<25ms` P95 latency requirements.
+  - **Arize AX (Multi-Tenant SaaS)** and **Braintrust (Hybrid SaaS)** are **REJECTED** under policy `SYF-SEC-PCI-001` and `SYF-SEC-HIPAA-002` due to external cloud egress of Tier-1 Cardholder Data (`PAN`, `SSN`) and CareCredit PHI (`MRN`, `ICD-10`).
+  - **Self-Hosted Langfuse Enterprise v3** deployed inside Synchrony's private VPC satisfies 100% of CISO zero-egress, Microsoft Entra ID OAuth 2.0, and `<25ms` P95 latency requirements.
 
 ## 3. Decision Outcome & Selected Architecture
-We select **Self-Hosted Langfuse Enterprise v3** fronted by a custom **FastAPI OpenTelemetry Collector & Inline DLP Proxy (`syf-eval-gateway`)** running on hardened Red Hat UBI9 Python 3.12 containers (`UID 1001`) inside Synchrony's private VPC.
+We select **Self-Hosted Langfuse Enterprise v3** (backed by ClickHouse columnar storage) fronted by a custom **FastAPI OpenTelemetry Collector & Inline DLP Proxy (`syf-eval-gateway`)** running on hardened Red Hat UBI9 Python 3.12 containers (`UID 1001`) inside Synchrony's private VPC.
 
 ## 4. Network Ingress, Identity & Inline DLP Controls
-- **Authentication**: Microsoft Entra ID OAuth 2.0 JWT validation using a local 300-second JWKS cache (`1.8ms` P95 overhead).
-- **Inline Sanitization**: Safe `json.dumps()` + compiled regex scrubbing (`PAN`, `SSN`, `MRN`) + `json.loads()` prior to asynchronous ClickHouse persistence (strictly forbidding `eval()`).
-- **Ingress & Service Mesh**: Synchrony Internal Service Mesh (Envoy sidecar `mesh.syf.bank/injected: "true"` with mTLS 1.3) to replace deprecated Kong Enterprise Gateway v3.4.
+- **Authentication**: Microsoft Entra ID OAuth 2.0 / OIDC JWT bearer token validation and strict `mTLS 1.3` encryption across all endpoints.
+- **Inline Sanitization**: Safe `json.dumps()` + compiled regex scrubbing (`PAN`, `SSN`, `MRN`, `ICD-10`) + `json.loads()` alongside Google Cloud Model Armor (`syf-pci-hipaa-strict-v2`) prior to asynchronous ClickHouse persistence (strictly forbidding `eval()`).
+- **Baseline API Gateway Ingress**: Routed via Synchrony's existing **Kong Enterprise API Gateway v3.4** with TLS 1.3 termination and per-tenant rate limiting.
 
-## 5. Consequences, Blast Radius & Operational SLAs
-- **Positive**: Saves **$109,000/yr** immediately (`$955,000/yr` at GECX scale); achieves `14.2ms` P95 proxy latency (`<25ms` SLA); 100% PCI-DSS v4.0 and CareCredit HIPAA compliant.
-- **Operational Trade-Off**: `SYF-Platform-Mesh-Squad` assumes operational ownership of the Langfuse + ClickHouse containers on AWS ROSA OpenShift / Google Cloud Run Private Subnets.
+## 5. Consequences, Delivery Velocity & Operational SLAs
+- **Delivery Baseline**: **6 Sprints (12 Weeks, 192 Story Points)** at **32 Story Points per 2-week sprint** (`$500/SP` = `$16,000/sprint`).
+- **Operational Impact**: Saves **$109,000/yr** immediately (`$955,000/yr` at GECX 50M scale); achieves `14.0ms` baseline P95 proxy latency (`<25ms` SLA); 100% PCI-DSS v4.0 and CareCredit HIPAA compliant.

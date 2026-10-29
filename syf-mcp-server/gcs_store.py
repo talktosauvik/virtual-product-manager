@@ -82,11 +82,13 @@ class SyfGcsWorkspaceStore:
             bucket = self._get_bucket()
             for prefix in ("workspace_artifacts/", "scaffolded_code/"):
                 for blob in bucket.list_blobs(prefix=prefix):
-                    if blob.name.endswith("/"):
+                    if blob.name.endswith("/") or "/history/" in blob.name or blob.name.endswith(".bak"):
                         continue
+                    doc_name = blob.name.split("/")[-1]
                     results.append(
                         {
-                            "name": blob.name.split("/")[-1],
+                            "name": doc_name,
+                            "document_name": doc_name,
                             "gcs_path": blob.name,
                             "gcs_uri": f"gs://{self.bucket_name}/{blob.name}",
                             "size_bytes": blob.size,

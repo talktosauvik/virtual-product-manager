@@ -7,9 +7,9 @@
 | **Base Enterprise License ($L_{\text{base}}$)** | $85,000 / yr | $60,000 / yr | $36,000 / yr |
 | **Per-1M Span Fee ($C_{\text{span\_M}}$)** | $1,666.67 / 1M spans | $1,250.00 / 1M spans | $0.00 (Self-Hosted Unlimited) |
 | **Annual Span Usage Fee (60M spans)** | $100,000 / yr | $75,000 / yr | $0 / yr |
-| **Internal ROSA / Cloud Run Compute ($I_{\text{compute}}$)** | $0 (SaaS Hosted) | $12,000 / yr (Data Plane Proxy) | $40,000 / yr (ROSA + ClickHouse) |
-| **Total Annual TCO @ 5M Spans/Mo** | **$185,000 / yr** | **$147,000 / yr** ($135k license+spans) | **$76,000 / yr** |
-| **Net Savings with Langfuse** | Baseline (+$109,000/yr costlier) | +$59,000 to +$71,000/yr costlier | **Saves $109,000/yr (58.9% reduction)** |
+| **Internal ROSA / Cloud Run Compute ($I_{\text{compute}}$)** | $0 (SaaS Hosted) | $0 (Hybrid SaaS Tier) | $40,000 / yr (ROSA + ClickHouse) |
+| **Total Annual TCO @ 5M Spans/Mo** | **$185,000 / yr** | **$135,000 / yr** | **$76,000 / yr** |
+| **Net Savings with Langfuse** | Baseline (+$109,000/yr costlier) | +$59,000/yr costlier | **Saves $109,000/yr (58.9% reduction)** |
 
 ---
 

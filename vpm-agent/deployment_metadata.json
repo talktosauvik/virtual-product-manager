@@ -1,8 +1,19 @@
 {
   "remote_agent_runtime_id": "projects/121190797389/locations/us-central1/reasoningEngines/8155381483301765120",
-  "deployment_timestamp": "2026-10-23T18:03:20.908547+00:00",
+  "deployment_timestamp": "2026-10-29T03:53:41.872311+00:00",
   "deployment_target": "agent_runtime",
   "is_a2a": true,
   "language": "python",
-  "agent_directory": "app"
+  "agent_directory": "app",
+  "pending_operation": {
+    "owner_id": "98177e45f0ac489a865db07b2867ceeb",
+    "state": "running",
+    "operation_name": "projects/121190797389/locations/us-central1/reasoningEngines/8155381483301765120/operations/1407755808497729536",
+    "project": "vertexai-l300-capstone",
+    "location": "us-central1",
+    "deployment_target": "agent_runtime",
+    "started_at": "2026-10-29T03:59:18.779942+00:00",
+    "owner_pid": 7396,
+    "owner_host": "cs-388586929289-default"
+  }
 }

@@ -19,9 +19,9 @@ This skill governs how Alex (`vpm-agent`) and Devin (`dev-agent`) translate livi
 
 Refer to [gherkin_story_schema.json](./resources/gherkin_story_schema.json) for the required JSON structure.
 
-- **Epic Key**: `AI-EVAL-101` (`"Synchrony Enterprise GenAI Evaluation & Observability Gateway"`).
-- **Agile Sprint Cadence**: 2-week sprints; baseline squad capacity = `20 story points / sprint`.
-- **Fibonacci Story Point Scale**: Only `1, 2, 3, 5, 8, 13` points per story.
+- **Epic Key**: `AI-EVAL-101` (`SYF-5`: `"Synchrony Enterprise GenAI Evaluation & Observability Gateway"`).
+- **Agile Sprint Cadence**: 2-week sprints; industry-standard 4–5 developer squad velocity = **`32 Story Points / sprint`** (`$500/SP` = **`$16,000 / sprint`**).
+- **Baseline 6-Sprint Plan**: `6 Sprints (12 Weeks) = 192 Total Story Points` (`48 SP` per baseline story across `SYF-6 / AI-STORY-101` .. `SYF-9 / AI-STORY-104`; delta curveball stories are sized at `32 SP` = `1 Sprint`).
 - **Assigned Synchrony Engineering Squads**:
   - `SYF-Platform-Mesh-Squad` (OpenShift ROSA / Cloud Run deployment, Envoy Service Mesh mTLS, ClickHouse cluster)
   - `SYF-SecOps-DLP-Squad` (Inline PII/PCI/CareCredit HIPAA redaction middleware, Entra ID OAuth 2.0 JWKS auth)

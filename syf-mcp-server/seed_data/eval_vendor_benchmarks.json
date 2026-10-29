@@ -36,7 +36,7 @@
       "deployment_model": "Hybrid Cloud (External SaaS Control Plane + Internal Data Plane Proxy)",
       "base_annual_license_usd": 60000.0,
       "cost_per_million_spans_usd": 1250.0,
-      "rosa_compute_base_annual_usd": 12000.0,
+      "rosa_compute_base_annual_usd": 0.0,
       "rosa_compute_per_additional_10m_spans_usd": 4000.0,
       "cross_cloud_egress_per_million_spans_usd": 15.0,
       "pci_dss_zero_egress_compliant": false,
@@ -49,7 +49,7 @@
       ],
       "disqualifiers_for_syf": [
         "CONDITIONAL / HIGH RISK: Evaluation scores, dataset metadata, and user identifiers still egress to Braintrust SaaS control plane",
-        "High volume scaling cost ($147,000/yr at 5M spans/mo; $804,000/yr at 50M GECX spans/mo)"
+        "High volume scaling cost ($135,000/yr at 5M spans/mo; $804,000/yr at 50M GECX spans/mo)"
       ]
     },
     "langfuse": {
@@ -64,11 +64,11 @@
       "pci_dss_zero_egress_compliant": true,
       "carecredit_hipaa_compliant": true,
       "otel_w3c_tracecontext_native": true,
-      "p95_ingestion_latency_ms": 14.2,
+      "p95_ingestion_latency_ms": 13.8,
       "strengths": [
         "100% Zero-Egress PCI-DSS v4.0 & CareCredit HIPAA compliant (all spans stay inside Synchrony private VPC ClickHouse + PostgreSQL)",
         "Zero per-span ingestion fees ($76,000/yr total TCO at 5M spans/mo saving $109,000/yr vs. Arize; $130,000/yr at 50M spans/mo saving $955,000/yr vs. Arize)",
-        "Native OpenTelemetry W3C TraceContext (traceparent) collector support with <15ms P95 ingestion latency"
+        "Native OpenTelemetry W3C TraceContext (traceparent) collector support with 13.8ms P95 ingestion latency (<25ms SLA)"
       ],
       "disqualifiers_for_syf": [
         "Requires SYF-Platform-Mesh-Squad to manage ClickHouse + Langfuse containers on ROSA OpenShift or Cloud Run Private Subnets"

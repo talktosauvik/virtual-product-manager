@@ -303,9 +303,9 @@ def _query_reddit_json_api(query: str, max_results: int = 3) -> list[dict[str, A
 
 def _evaluate_dynamic_community_curveball(
     curveball_description: str,
-    baseline_sprints: int,
-    baseline_story_points: int,
-    baseline_annual_tco_usd: float,
+    baseline_sprints: int = 6,
+    baseline_story_points: int = 192,
+    baseline_annual_tco_usd: float = 76000.0,
 ) -> dict[str, Any]:
     """Parallel <2.2s lookup across StackOverflow REST API v2.3, GitHub Issues API, Reddit/Community JSON API, and Google Search Grounding."""
     keywords = _extract_tech_keywords(curveball_description, max_terms=4)
@@ -330,6 +330,9 @@ def _evaluate_dynamic_community_curveball(
             except Exception:
                 pass
 
+    sp_per_sprint = 32
+    cost_per_sp = 500.0
+
     synthesized: dict[str, Any] = {}
     web_citations: list[dict[str, str]] = []
     try:
@@ -340,16 +343,23 @@ def _evaluate_dynamic_community_curveball(
         community_ctx = json.dumps((so_hits + gh_hits + rd_hits)[:6], indent=2)
         prompt = (
             "You are Marcus (syf-arch-agent), Principal Enterprise Architect & Cyber Governance Specialist at Synchrony Financial.\n"
-            "An executive just injected an unscripted architectural curveball into our Self-Hosted Langfuse v3 + OpenTelemetry + "
+            "An executive just injected an architectural curveball into our Self-Hosted Langfuse v3 + OpenTelemetry + "
             "FastAPI PCI/HIPAA Redaction Proxy (<25ms P95 SLA) roadmap:\n\n"
-            f"UNSCRIPTED CURVEBALL: {curveball_description}\n\n"
+            f"EXECUTIVE CURVEBALL: {curveball_description}\n\n"
             f"LIVE STACKOVERFLOW / GITHUB ISSUES / REDDIT API FINDINGS:\n{community_ctx}\n\n"
+            "SYNCHRONY AGILE DELIVERY MODEL (MANDATORY MATH RULES):\n"
+            "- Squad size: 4-5 Engineers\n"
+            "- Sprint Velocity: 32 Story Points per 2-week Sprint\n"
+            "- Blended Engineering Cost: $500 per Story Point ($16,000 per 32-SP Sprint)\n"
+            "- Baseline Plan: 6 Sprints = 192 Total Story Points\n"
+            "- Formula: sprint_delta = story_points_delta / 32; one_time_engineering_budget_delta_usd = story_points_delta * 500\n"
+            "- If the curveball is about Kong Enterprise Gateway v3.4 deprecation -> internal Envoy Service Mesh (mTLS 1.3): story_points_delta MUST be 64 (+2 Sprints, +$32,000 one-time, $0 recurring delta), producing 2 stories of 32 SP each.\n"
+            "- If the curveball is about OpenTelemetry Python gRPC span exporter memory leaks -> async HTTP/protobuf: story_points_delta MUST be 32 (+1 Sprint, +$16,000 one-time, $0 recurring delta), producing 1 story of 32 SP.\n\n"
             "Use Google Search grounding and the community API findings above to return a realistic engineering impact JSON object with keys:\n"
+            "- curveball_id (string, e.g., 'CB-1' or 'CB-DYNAMIC')\n"
             "- curveball_title (string)\n"
-            "- sprint_delta (integer between -1 and 3)\n"
-            "- story_points_delta (integer between 5 and 16)\n"
-            "- one_time_engineering_budget_delta_usd (number between 8000 and 40000)\n"
-            "- recurring_annual_tco_delta_usd (number between -14000 and 28000)\n"
+            "- story_points_delta (integer multiple of 32: 32 or 64)\n"
+            "- recurring_annual_tco_delta_usd (number, default 0)\n"
             "- remediation_summary (string citing concrete StackOverflow/GitHub/Reddit/CNCF engineering mitigations)\n"
             "- story_title (string)\n"
             "- gherkin_criteria (string with Given / When / Then)\n"
@@ -359,7 +369,7 @@ def _evaluate_dynamic_community_curveball(
             model="gemini-3.5-flash-lite",
             contents=prompt,
             config=types.GenerateContentConfig(
-                temperature=0.1,
+                temperature=0.0,
                 tools=[types.Tool(google_search=types.GoogleSearch())],
             ),
         )
@@ -382,46 +392,108 @@ def _evaluate_dynamic_community_curveball(
     except Exception as exc:
         logger.warning("Dynamic Gemini + Google Search grounding fallback: %s", exc)
 
-    sprint_delta = int(synthesized.get("sprint_delta", 1))
-    points_delta = int(synthesized.get("story_points_delta", 8))
-    one_time_budget_delta = float(
-        synthesized.get("one_time_engineering_budget_delta_usd", 16000.0)
-    )
+    desc_lower = curveball_description.lower()
+    is_kong = any(k in desc_lower for k in ("kong", "service mesh", "envoy", "cb-1"))
+    default_sp_delta = 64 if is_kong else 32
+    raw_sp_delta = int(synthesized.get("story_points_delta", default_sp_delta))
+    if raw_sp_delta not in (0, 32, 64, 96, -32):
+        raw_sp_delta = default_sp_delta
+
+    points_delta = raw_sp_delta
+    sprint_delta = points_delta // sp_per_sprint
+    one_time_budget_delta = float(points_delta * cost_per_sp)
     recurring_delta = float(
-        synthesized.get("recurring_annual_tco_delta_usd", 6000.0)
+        synthesized.get("recurring_annual_tco_delta_usd", 0.0)
     )
+    cb_id = str(synthesized.get("curveball_id", "CB-1" if is_kong else "CB-DYNAMIC"))
     title = synthesized.get(
         "curveball_title",
-        f"Dynamic Architectural Adaptation: {curveball_description[:72]}",
+        (
+            "Kong Enterprise Gateway v3.4 Q1 Deprecation -> Synchrony Envoy Service Mesh (mTLS 1.3)"
+            if is_kong
+            else f"Dynamic Architectural Adaptation: {curveball_description[:72]}"
+        ),
     )
     remediation = synthesized.get(
         "remediation_summary",
         (
-            f"Synthesized live practitioner guidance across StackOverflow ({len(so_hits)} threads), "
+            "Remove deprecated Kong Enterprise Gateway v3.4 from the ingress path. "
+            "Inject Synchrony Internal Service Mesh Envoy sidecar (mesh.syf.bank/injected: 'true') "
+            "with strict SPIFFE/Entra ID mTLS 1.3 validation and route north-south APIs via Apigee Hybrid."
+            if is_kong
+            else f"Synthesized live practitioner guidance across StackOverflow ({len(so_hits)} threads), "
             f"GitHub Issues ({len(gh_hits)} issues), Reddit ({len(rd_hits)} discussions), and Google Search Grounding. "
             "Isolated architectural changes behind the FastAPI OpenTelemetry `/v1/traces` proxy boundary to preserve "
             "the <25ms P95 SLA and 100% PCI-DSS v4.0 / CareCredit HIPAA zero-PII egress compliance."
         ),
     )
-    story_title = synthesized.get(
-        "story_title",
-        f"Implement Architectural Remediation for {title[:60]}",
-    )
-    gherkin_text = synthesized.get(
-        "gherkin_criteria",
-        (
-            f"Given the executive directive ({curveball_description[:80]}), "
-            "When the FastAPI OpenTelemetry proxy processes production telemetry spans, "
-            "Then 100% of PCI/HIPAA redaction controls pass audit verification and P95 proxy latency remains strictly <25ms."
-        ),
-    )
-    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:28]
+
+    if is_kong:
+        added_stories = [
+            {
+                "story_id": "AI-STORY-104",
+                "title": "Migrate Evaluation Gateway Ingress from Deprecated Kong v3.4 to Envoy Service Mesh (mTLS 1.3)",
+                "squad": "SYF-Platform-Mesh-Squad",
+                "story_points": 32,
+                "sprint": "SYF Sprint 1",
+                "linked_baseline_issue_key": "SYF-9",
+                "bitbucket_branch": "feature/AI-EVAL-101-envoy-mesh-migration",
+                "gherkin_acceptance_criteria": [
+                    "Given Kong Enterprise Gateway v3.4 is deprecated in Q1, When the evaluation proxy is deployed to ROSA OpenShift, Then pod annotations include mesh.syf.bank/injected: 'true' with SPIFFE mTLS 1.3 peer verification."
+                ],
+            },
+            {
+                "story_id": "AI-STORY-105",
+                "title": "Automate SPIFFE/Entra ID mTLS Certificate Rotation & Envoy Telemetry Filter Policies",
+                "squad": "SYF-SecOps-DLP-Squad",
+                "story_points": 32,
+                "sprint": "SYF Sprint 1",
+                "linked_baseline_issue_key": "SYF-9",
+                "bitbucket_branch": "feature/AI-EVAL-101-spiffe-mtls-rotation",
+                "gherkin_acceptance_criteria": [
+                    "Given East-West Envoy service mesh traffic, When SPIFFE X.509 SVID certificates rotate, Then zero requests drop and P95 proxy latency remains <25ms."
+                ],
+            },
+        ]
+    else:
+        story_title = synthesized.get(
+            "story_title",
+            f"Implement Architectural Remediation for {title[:60]}",
+        )
+        gherkin_text = synthesized.get(
+            "gherkin_criteria",
+            (
+                f"Given the executive directive ({curveball_description[:80]}), "
+                "When the FastAPI OpenTelemetry proxy processes production telemetry spans, "
+                "Then 100% of PCI/HIPAA redaction controls pass audit verification and P95 proxy latency remains strictly <25ms."
+            ),
+        )
+        slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:28]
+        added_stories = [
+            {
+                "story_id": "AI-STORY-108",
+                "title": story_title,
+                "squad": "SYF-Platform-Mesh-Squad",
+                "story_points": points_delta,
+                "sprint": "SYF Sprint 1",
+                "linked_baseline_issue_key": "SYF-9",
+                "bitbucket_branch": f"feature/AI-EVAL-101-{slug or 'dynamic-remediation'}",
+                "gherkin_acceptance_criteria": [gherkin_text],
+            }
+        ]
 
     return {
         "card_type": "curveball_impact_card",
-        "curveball_id": "CB-DYNAMIC",
+        "curveball_id": cb_id,
         "curveball_title": title,
         "discovery_mode": "Live Parallel Developer Community APIs (StackOverflow v2.3 + GitHub Issues + Reddit JSON) + Vertex AI Google Search Grounding",
+        "agile_velocity_formula": {
+            "squad_size": "4-5 Engineers",
+            "story_points_per_sprint": sp_per_sprint,
+            "sprint_duration_weeks": 2,
+            "blended_cost_per_story_point_usd": cost_per_sp,
+            "sprint_cost_usd": sp_per_sprint * cost_per_sp,
+        },
         "baseline_sprints": baseline_sprints,
         "sprint_delta": sprint_delta,
         "revised_total_sprints": max(1, baseline_sprints + sprint_delta),
@@ -438,18 +510,7 @@ def _evaluate_dynamic_community_curveball(
             "reddit_json_api_hits": rd_hits,
             "google_search_grounding_hits": web_citations[:4],
         },
-        "new_or_updated_jira_stories": [
-            {
-                "story_id": "AI-STORY-108",
-                "title": story_title,
-                "squad": "SYF-Platform-Mesh-Squad",
-                "story_points": points_delta,
-                "sprint": "SYF Sprint 1",
-                "linked_baseline_issue_key": "SYF-9",
-                "bitbucket_branch": f"feature/AI-EVAL-101-{slug or 'dynamic-remediation'}",
-                "gherkin_acceptance_criteria": [gherkin_text],
-            }
-        ],
+        "new_or_updated_jira_stories": added_stories,
         "requires_human_approval_gate": True,
     }
 
@@ -457,140 +518,13 @@ def _evaluate_dynamic_community_curveball(
 def evaluate_curveball_impact(
     curveball_description: str,
     baseline_sprints: int = 6,
-    baseline_story_points: int = 34,
+    baseline_story_points: int = 192,
     baseline_annual_tco_usd: float = 76000.0,
 ) -> dict[str, Any]:
-    """Deterministically evaluate the architectural blast radius, sprint delta, story point delta, and budget delta for any executive curveball thrown by Dan Weis (supports CB-1..CB-5 and live dynamic StackOverflow/GitHub/Reddit/Google Search synthesis for unscripted curveballs)."""
-    desc_lower = curveball_description.lower()
-
-    if any(k in desc_lower for k in ("kong", "service mesh", "envoy", "cb-1")):
-        cb_id = "CB-1"
-        title = "Kong Enterprise Gateway v3.4 Q1 Deprecation -> Synchrony Envoy Service Mesh (mTLS 1.3)"
-        sprint_delta = 2
-        points_delta = 16
-        one_time_budget_delta = 32000.0
-        new_annual_tco = baseline_annual_tco_usd
-        affected_squads = ["SYF-Platform-Mesh-Squad", "SYF-SecOps-DLP-Squad"]
-        remediation = (
-            "Remove deprecated Kong Enterprise Gateway v3.4 from the ingress path. "
-            "Inject Synchrony Internal Service Mesh Envoy sidecar (mesh.syf.bank/injected: 'true') "
-            "with strict SPIFFE/Entra ID mTLS 1.3 validation and route north-south APIs via Apigee Hybrid."
-        )
-        added_stories = [
-            {
-                "story_id": "AI-STORY-104",
-                "title": "Migrate Evaluation Gateway Ingress from Deprecated Kong v3.4 to Envoy Service Mesh (mTLS 1.3)",
-                "squad": "SYF-Platform-Mesh-Squad",
-                "story_points": 8,
-                "sprint": "SYF Sprint 1",
-                "linked_baseline_issue_key": "SYF-9",
-                "bitbucket_branch": "feature/AI-EVAL-101-envoy-mesh-migration",
-            },
-            {
-                "story_id": "AI-STORY-105",
-                "title": "Automate SPIFFE/Entra ID mTLS Certificate Rotation & Envoy Telemetry Filter Policies",
-                "squad": "SYF-SecOps-DLP-Squad",
-                "story_points": 8,
-                "sprint": "SYF Sprint 1",
-                "linked_baseline_issue_key": "SYF-9",
-                "bitbucket_branch": "feature/AI-EVAL-101-spiffe-mtls-rotation",
-            },
-        ]
-    elif any(k in desc_lower for k in ("50m", "50 million", "gecx", "contact center", "9000", "9,000", "10x", "cb-2")):
-        cb_id = "CB-2"
-        title = "10x GECX Contact Center Volume Surge (5M -> 50M Spans/Month across 9,000 Agents)"
-        sprint_delta = 1
-        points_delta = 8
-        one_time_budget_delta = 54000.0
-        new_annual_tco = 130000.0
-        affected_squads = ["SYF-Platform-Mesh-Squad", "SYF-AI-FinOps-Squad"]
-        remediation = (
-            "Scale ClickHouse storage plane to a 3-node sharded ClickHouse Keeper cluster on ROSA/Cloud Run "
-            "and enable async ring-buffer batching in the FastAPI OTel proxy. "
-            "Self-Hosted Langfuse TCO scales from $76k/yr to $130k/yr (saving $955,000/yr vs. Arize AX SaaS at $1,085,000/yr)."
-        )
-        added_stories = [
-            {
-                "story_id": "AI-STORY-106",
-                "title": "Deploy 3-Node Sharded ClickHouse Keeper Cluster for 50M Monthly GECX Contact Center Spans",
-                "squad": "SYF-Platform-Mesh-Squad",
-                "story_points": 8,
-                "sprint": "SYF Sprint 1",
-                "linked_baseline_issue_key": "SYF-8",
-                "bitbucket_branch": "feature/AI-EVAL-101-clickhouse-50m-sharding",
-            }
-        ]
-    elif any(k in desc_lower for k in ("hipaa", "carecredit", "phi", "mrn", "icd-10", "cb-3")):
-        cb_id = "CB-3"
-        title = "CISO CareCredit HIPAA PHI Inline Scrubbing Mandate (MRN & ICD-10)"
-        sprint_delta = 1
-        points_delta = 8
-        one_time_budget_delta = 18000.0
-        new_annual_tco = baseline_annual_tco_usd
-        affected_squads = ["SYF-SecOps-DLP-Squad"]
-        remediation = (
-            "Extend FastAPI inline sanitization middleware with compiled CareCredit HIPAA PHI regexes "
-            "(MRN-\\d{6,10} -> [REDACTED_MRN], ICD-10 -> [REDACTED_ICD10]) and Model Armor DLP template verification within <25ms P95."
-        )
-        added_stories = [
-            {
-                "story_id": "AI-STORY-107",
-                "title": "Add CareCredit HIPAA PHI (MRN & ICD-10) Inline Redaction Filter to FastAPI Proxy",
-                "squad": "SYF-SecOps-DLP-Squad",
-                "story_points": 8,
-                "sprint": "SYF Sprint 1",
-                "linked_baseline_issue_key": "SYF-6",
-                "bitbucket_branch": "feature/AI-EVAL-101-carecredit-hipaa-dlp",
-            }
-        ]
-    elif any(k in desc_lower for k in ("rosa", "freeze", "cloud run", "openshift", "cb-4")):
-        cb_id = "CB-4"
-        title = "AWS ROSA OpenShift Capacity Freeze -> Google Cloud Run Private Subnets Pivot"
-        sprint_delta = -1
-        points_delta = -5
-        one_time_budget_delta = -14000.0
-        new_annual_tco = 62000.0
-        affected_squads = ["SYF-Platform-Mesh-Squad"]
-        remediation = (
-            "Pivot hardened UBI9 container deployment from AWS ROSA OpenShift to Google Cloud Run Private Subnets "
-            "with Direct VPC Egress and Cloud IAM Workload Identity, accelerating delivery by 1 sprint (-2 weeks) and saving $14,000/yr."
-        )
-        added_stories = []
-    elif any(k in desc_lower for k in ("entra", "jwks", "introspect", "42ms", "42.3", "ai-story-102", "syf-7", "cb-5")):
-        cb_id = "CB-5"
-        title = "Developer Blocker on AI-STORY-102 (SYF-7): Entra ID Introspection Latency (42.3ms -> 1.8ms via JWKS Cache)"
-        sprint_delta = 0
-        points_delta = 3
-        one_time_budget_delta = 0.0
-        new_annual_tco = baseline_annual_tco_usd
-        affected_squads = ["SYF-AI-FinOps-Squad", "SYF-SecOps-DLP-Squad"]
-        remediation = (
-            "Replace synchronous Microsoft Entra ID /introspect WAN call (42.3ms) with local in-memory/Redis "
-            "JWKS public-key caching (300s TTL), dropping JWT auth verification latency to 1.8ms and total proxy P95 to 14.2ms."
-        )
-        added_stories = []
-    else:
-        return _evaluate_dynamic_community_curveball(
-            curveball_description=curveball_description,
-            baseline_sprints=baseline_sprints,
-            baseline_story_points=baseline_story_points,
-            baseline_annual_tco_usd=baseline_annual_tco_usd,
-        )
-
-    return {
-        "card_type": "curveball_impact_card",
-        "curveball_id": cb_id,
-        "curveball_title": title,
-        "baseline_sprints": baseline_sprints,
-        "sprint_delta": sprint_delta,
-        "revised_total_sprints": baseline_sprints + sprint_delta,
-        "baseline_story_points": baseline_story_points,
-        "story_points_delta": points_delta,
-        "revised_total_story_points": baseline_story_points + points_delta,
-        "one_time_engineering_budget_delta_usd": one_time_budget_delta,
-        "revised_annual_tco_usd": new_annual_tco,
-        "affected_squads": affected_squads,
-        "architectural_remediation": remediation,
-        "new_or_updated_jira_stories": added_stories,
-        "requires_human_approval_gate": True,
-    }
+    """Evaluate the architectural blast radius, sprint delta, story point delta, and budget delta for any executive curveball using Synchrony's 32 SP/sprint Agile velocity formula and live community/search grounding."""
+    return _evaluate_dynamic_community_curveball(
+        curveball_description=curveball_description,
+        baseline_sprints=baseline_sprints,
+        baseline_story_points=baseline_story_points,
+        baseline_annual_tco_usd=baseline_annual_tco_usd,
+    )
