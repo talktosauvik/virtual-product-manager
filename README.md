@@ -63,7 +63,7 @@ Modeled for **a large financial institution**, this system automates cross-funct
 ### Step 1: Clone the Repository & Install Dependencies
 
 ```bash
-git clone https://github.com/talktosauvik/virtual-product-manager.git
+git clone https://github.com/cloud-gtm/virtual-product-manager.git
 cd virtual-product-manager
 
 # Sync isolated virtual environments for the MCP server and all 4 agents
