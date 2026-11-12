@@ -2,7 +2,7 @@
 
 An enterprise multi-agent platform built on **Google ADK 2.0 (`Workflow` Graph Orchestration)**, **Vertex AI Agent Runtime**, **Google Cloud Run**, **A2A JSON-RPC + A2UI v0.9**, **FastMCP**, and **Gemini Enterprise**.
 
-Modeled for **Synchrony Financial (SYF)**, this system automates cross-functional product discovery, live vendor FinOps & 3-year Total Cost of Ownership (TCO) modeling, zero-trust CISO regulatory governance, "Cursor-style" living specification diffs with Human-in-the-Loop (HITL) approval, live **Atlassian Confluence & Jira** synchronization, and autonomous 8-file **Bitbucket Cloud** code scaffolding & deployment verification.
+Modeled for **a large financial institution**, this system automates cross-functional product discovery, live vendor FinOps & 3-year Total Cost of Ownership (TCO) modeling, zero-trust CISO regulatory governance, "Cursor-style" living specification diffs with Human-in-the-Loop (HITL) approval, live **Atlassian Confluence & Jira** synchronization, and autonomous 8-file **Bitbucket Cloud** code scaffolding & deployment verification.
 
 ---
 
@@ -41,7 +41,7 @@ Modeled for **Synchrony Financial (SYF)**, this system automates cross-functiona
    - Generates color-coded `[-REMOVED-]` / `[+ADDED+]` diffs on Confluence Cloud and pauses at a **Human-in-the-Loop (HITL)** approval gate (`Approve & Commit`).
    - Upon approval, promotes `PRD-AI-EVAL-101` & `ADR-001-Eval-Gateway` to `APPROVED` in **Confluence Cloud**, commits decisions to **Vertex AI Memory Bank**, and creates **8 linked Sprint 1 stories** under Master Epic **`SYF-5`** in **Jira Cloud**.
 3. **Turn 3 — Autonomous 7-Step Sprint 1 Engineering & Live Deployment (`@Devin`)**:
-   - Loads 6 Synchrony engineering skills (`SKILL.md`), pulls the 8 assigned Sprint 1 Jira stories (`SYF-6+`), scaffolds the 8-file production Envoy/OpenTelemetry DLP Gateway repository (including AST-verified custom curveball features), runs a 2-iteration Security/DLP & 500-Span Golden Latency self-correction loop (`12/12` Pytest passed, `13.8ms` P95 `<25ms` SLA), commits all 8 files to **Bitbucket Cloud** (`feature/SYF-5-envoy-otel-gateway`), opens a live Pull Request, transitions all 8 Jira stories to **`DONE`**, and smoke-tests `/live-gateway/api/evaluate`.
+   - Loads 6 enterprise engineering skills (`SKILL.md`), pulls the 8 assigned Sprint 1 Jira stories (`SYF-6+`), scaffolds the 8-file production Envoy/OpenTelemetry DLP Gateway repository (including AST-verified custom curveball features), runs a 2-iteration Security/DLP & 500-Span Golden Latency self-correction loop (`12/12` Pytest passed, `13.8ms` P95 `<25ms` SLA), commits all 8 files to **Bitbucket Cloud** (`feature/SYF-5-envoy-otel-gateway`), opens a live Pull Request, transitions all 8 Jira stories to **`DONE`**, and smoke-tests `/live-gateway/api/evaluate`.
 
 ---
 
@@ -234,7 +234,7 @@ uv run agents-cli publish gemini \
   --app-id "$GEMINI_ENTERPRISE_APP_ID" \
   --location global \
   --agent-engine-id "$VPM_ENGINE_ID" \
-  --display-name "Alex - Synchrony Virtual PM" \
+  --display-name "Alex - Enterprise Virtual PM" \
   --description "Root Virtual Product Manager Orchestrator (Discovery, FinOps, CISO & SDLC)"
 cd ..
 
@@ -246,7 +246,7 @@ uv run agents-cli publish gemini \
   --app-id "$GEMINI_ENTERPRISE_APP_ID" \
   --location global \
   --agent-engine-id "$DEV_ENGINE_ID" \
-  --display-name "Devin - Synchrony Lead Platform Developer" \
+  --display-name "Devin - Lead Platform Developer" \
   --description "Autonomous Lead Platform Developer & SDLC Code Scaffolder"
 cd ..
 ```
@@ -283,7 +283,7 @@ virtual-product-manager/
 ├── arch-agent/                              # Marcus — CISO & Enterprise Architecture A2A Agent (ADK 2.0)
 ├── dev-agent/                               # Devin — 7-Step Autonomous Developer Agent (ADK 2.0)
 ├── syf-mcp-server/                          # Enterprise SDLC FastMCP Server & Live Gateway Runtime
-├── shared_skills/                           # 6 Synchrony Engineering & Product Governance Skills (SKILL.md)
+├── shared_skills/                           # 6 Enterprise Engineering & Product Governance Skills (SKILL.md)
 ├── scripts/                                 # CLI Bootstrap, SDLC Seeding, and Clean-Slate Reset Scripts
 ├── AGENT_TO_TOOLS.md                        # Complete Agent-to-Tools & FastMCP Integration Matrix
 ├── A2A_HANDOFF_MANIFEST.md                  # A2A JSON-RPC Contracts & Cross-Agent Payload Schemas

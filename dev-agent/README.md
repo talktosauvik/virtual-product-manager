@@ -1,6 +1,6 @@
 # `dev-agent` — Devin (Lead Cloud & IaC Engineer)
 
-**Devin (`dev-agent`)** is the autonomous Lead Cloud & IaC Engineer for Synchrony Financial. Built on **Google ADK 2.0 (`Workflow` Graph, `FunctionNode` with `RetryConfig`, and `JoinNode` fan-out/fan-in diamonds)**, deployed on **Vertex AI Agent Runtime (`ReasoningEngine`)**, and registered in **Gemini Enterprise**, Devin executes a 7-step Sprint 1 engineering pipeline that pulls assigned Jira stories (`SYF-5`), activates 6 Synchrony engineering skills, scaffolds an 8-file Envoy/OpenTelemetry DLP Gateway repository (injecting any custom Turn 2 curveball AST features), runs a 2-iteration Security/DLP & 500-Span Golden Latency QA suite, commits all 8 files to **Bitbucket Cloud** (`syf-eval-gateway`), opens a live Pull Request, transitions all 8 Jira stories to **`DONE`**, and smoke-tests the live Cloud Run gateway.
+**Devin (`dev-agent`)** is the autonomous Lead Cloud & IaC Engineer (modeled for a large financial institution). Built on **Google ADK 2.0 (`Workflow` Graph, `FunctionNode` with `RetryConfig`, and `JoinNode` fan-out/fan-in diamonds)**, deployed on **Vertex AI Agent Runtime (`ReasoningEngine`)**, and registered in **Gemini Enterprise**, Devin executes a 7-step Sprint 1 engineering pipeline that pulls assigned Jira stories (`SYF-5`), activates 6 enterprise engineering skills, scaffolds an 8-file Envoy/OpenTelemetry DLP Gateway repository (injecting any custom Turn 2 curveball AST features), runs a 2-iteration Security/DLP & 500-Span Golden Latency QA suite, commits all 8 files to **Bitbucket Cloud** (`syf-eval-gateway`), opens a live Pull Request, transitions all 8 Jira stories to **`DONE`**, and smoke-tests the live Cloud Run gateway.
 
 ---
 
@@ -15,7 +15,7 @@
 
 ## 2. 7-Step Autonomous Execution Pipeline (`app/agent.py` & `app/tools.py`)
 
-1. **`install_and_activate_coding_skills`**: Discovers and loads all 6 Synchrony `SKILL.md` specifications (`syf-rosa-gateway-scaffolding`, `syf-zero-trust-compliance`, `syf-sdlc-backlog-sync`, etc.).
+1. **`install_and_activate_coding_skills`**: Discovers and loads all 6 enterprise `SKILL.md` specifications (`syf-rosa-gateway-scaffolding`, `syf-zero-trust-compliance`, `syf-sdlc-backlog-sync`, etc.).
 2. **`fetch_assigned_sprint1_jira_stories`**: Queries `BACKLOG-AI-EVAL-101.json` via `syf-mcp-server` for the 8 assigned Sprint 1 Jira stories (`SYF-6+`) and any approved custom runtime specification.
 3. **`scaffold_gateway_and_envoy_mesh`** *(Parallel Branch A)*: Generates `proxy_gateway.py`, `Dockerfile` (Red Hat UBI9 non-root `USER 1001`), `k8s/openshift-envoy-deployment.yaml` (`mesh.syf.bank/injected: "true"`), `templates/dashboard.html`, and `requirements.txt`.
 4. **`scaffold_eval_suite_and_ci_pipeline`** *(Parallel Branch B)*: Generates `eval_suite.py` (500-span golden benchmark), `tests/test_gateway_and_evals.py` (12 Pytest checks), and `bitbucket-pipelines.yml`.
@@ -55,6 +55,6 @@ uv run agents-cli publish gemini \
   --app-id "$GEMINI_ENTERPRISE_APP_ID" \
   --location global \
   --agent-engine-id "$DEV_ENGINE_ID" \
-  --display-name "Devin - Synchrony Lead Platform Developer" \
+  --display-name "Devin - Lead Platform Developer" \
   --description "Autonomous Lead Platform Developer & SDLC Code Scaffolder"
 ```

@@ -1,6 +1,6 @@
 # `syf-mcp-server` — Enterprise SDLC FastMCP Server & Live Gateway Runtime
 
-`syf-mcp-server` is the centralized **Model Context Protocol (FastMCP)** server, dynamic developer community intelligence hub, and live evaluation gateway web portal for the Synchrony Financial Virtual Product Manager platform. Deployed on **Google Cloud Run**, it connects the ADK 2.0 agent fleet (`vpm-agent`, `finops-agent`, `arch-agent`, `dev-agent`) to **Google Cloud Storage (GCS)**, **Atlassian Confluence Cloud**, **Atlassian Jira Cloud**, and **Bitbucket Cloud** via **GCP Agent Identity Auth Manager** (`AuthProviderCredentialsServiceClient.retrieve_credentials`).
+`syf-mcp-server` is the centralized **Model Context Protocol (FastMCP)** server, dynamic developer community intelligence hub, and live evaluation gateway web portal for the Virtual Product Manager platform (modeled for a large financial institution). Deployed on **Google Cloud Run**, it connects the ADK 2.0 agent fleet (`vpm-agent`, `finops-agent`, `arch-agent`, `dev-agent`) to **Google Cloud Storage (GCS)**, **Atlassian Confluence Cloud**, **Atlassian Jira Cloud**, and **Bitbucket Cloud** via **GCP Agent Identity Auth Manager** (`AuthProviderCredentialsServiceClient.retrieve_credentials`).
 
 ![Reference Architecture](../assets/reference-architecture.png)
 
@@ -9,7 +9,7 @@
 ## 1. Live Endpoints Hosted on `syf-mcp-server`
 
 - **MCP Streamable HTTP Endpoint**: `<SYF_PUBLIC_BASE_URL>/mcp`
-- **Live Synchrony Skill Registry UI**: `<SYF_PUBLIC_BASE_URL>/skills-ui`
+- **Live Enterprise Skill Registry UI**: `<SYF_PUBLIC_BASE_URL>/skills-ui`
 - **Live Envoy/OpenTelemetry DLP Gateway Dashboard**: `<SYF_PUBLIC_BASE_URL>/live-gateway`
 - **Live Gateway Evaluation REST API**: `POST <SYF_PUBLIC_BASE_URL>/live-gateway/api/evaluate`
 - **Health Check**: `<SYF_PUBLIC_BASE_URL>/healthz`
@@ -21,7 +21,7 @@
 | # | MCP Tool Name | Description |
 | :--- | :--- | :--- |
 | 1 | `query_vendor_cost_benchmarks` | Computes deterministic 1-yr & 3-yr TCO across Arize AX, Braintrust, and Self-Hosted Langfuse v3 at `5M` and `50M` monthly spans (`seed_data/eval_vendor_benchmarks.json`). |
-| 2 | `get_architecture_standards` | Retrieves Synchrony CISO, OCC, PCI-DSS v4.0, CareCredit HIPAA, and ROSA Envoy mesh standards (`seed_data/architecture_standards.json`). |
+| 2 | `get_architecture_standards` | Retrieves enterprise CISO, OCC, PCI-DSS v4.0, CareCredit HIPAA, and ROSA Envoy mesh standards (`seed_data/architecture_standards.json`). |
 | 3 | `list_workspace_documents` | Lists living workspace files (`PRD-AI-EVAL-101.md`, `ADR-001-Eval-Gateway.md`, `BACKLOG-AI-EVAL-101.json`) and their live Confluence/Jira/Bitbucket URLs. |
 | 4 | `get_workspace_document` | Reads the full Markdown or JSON content of a living workspace file from GCS. |
 | 5 | `save_workspace_document` | Overwrites a full workspace document in GCS and syncs to Confluence Cloud. |

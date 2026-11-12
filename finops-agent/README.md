@@ -1,6 +1,6 @@
 # `finops-agent` — Morgan (Deep Research & FinOps Lead)
 
-**Morgan (`finops-agent`)** is the specialist Cloud FinOps and vendor benchmark agent for Synchrony Financial. Built on **Google ADK 2.0 (`Workflow` Parallel Fan-Out + `JoinNode`)** and deployed on **Vertex AI Agent Runtime (`ReasoningEngine`)**, Morgan combines GCS telemetry benchmarks (`eval_vendor_benchmarks.json`) with live Google Search grounding to evaluate AI evaluation platforms (**Arize AX Enterprise**, **Braintrust Enterprise**, **Self-Hosted Langfuse Enterprise v3**), cross-cloud egress tariffs, and deterministic 1-year and 3-year Total Cost of Ownership (TCO) models at both `5M` baseline and `50M` monthly surge trace volumes.
+**Morgan (`finops-agent`)** is the specialist Cloud FinOps and vendor benchmark agent (modeled for a large financial institution). Built on **Google ADK 2.0 (`Workflow` Parallel Fan-Out + `JoinNode`)** and deployed on **Vertex AI Agent Runtime (`ReasoningEngine`)**, Morgan combines GCS telemetry benchmarks (`eval_vendor_benchmarks.json`) with live Google Search grounding to evaluate AI evaluation platforms (**Arize AX Enterprise**, **Braintrust Enterprise**, **Self-Hosted Langfuse Enterprise v3**), cross-cloud egress tariffs, and deterministic 1-year and 3-year Total Cost of Ownership (TCO) models at both `5M` baseline and `50M` monthly surge trace volumes.
 
 ---
 

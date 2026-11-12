@@ -16,7 +16,7 @@ variable "genai_location" {
 }
 
 variable "workspace_bucket_name" {
-  description = "GCS bucket name for living PRD/ADR/Backlog workspace artifacts and Synchrony seed data. Defaults to <project_id>-syf-vpm-workspace when empty."
+  description = "GCS bucket name for living PRD/ADR/Backlog workspace artifacts and enterprise seed data. Defaults to <project_id>-syf-vpm-workspace when empty."
   type        = string
   default     = ""
 }

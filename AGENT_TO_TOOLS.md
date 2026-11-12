@@ -1,6 +1,6 @@
 # Agent-to-Tools & MCP Integration Matrix (`AGENT_TO_TOOLS.md`)
 
-Comprehensive mapping of every agent in the **Synchrony Financial Virtual Product Manager (VPM)** fleet to its local ADK tools, remote A2A handoffs, **FastMCP (`syf-mcp-server`)** tools, `McpToolset` `tool_filter` policies, and **GCP Agent Identity Auth Manager** configurations.
+Comprehensive mapping of every agent in the **AI-Driven Virtual Product Manager (VPM)** fleet (modeled for a large financial institution) to its local ADK tools, remote A2A handoffs, **FastMCP (`syf-mcp-server`)** tools, `McpToolset` `tool_filter` policies, and **GCP Agent Identity Auth Manager** configurations.
 
 ---
 

@@ -1,6 +1,6 @@
 # `arch-agent` — Marcus (CISO & Enterprise Architecture Specialist)
 
-**Marcus (`arch-agent`)** is the Chief Information Security Officer (CISO) and Enterprise Architecture agent for Synchrony Financial. Built on **Google ADK 2.0 (`Workflow` Graph + `JoinNode`)** and deployed on **Google Cloud Run** as a remote **Agent-to-Agent (A2A) JSON-RPC** server (`/.well-known/agent-card.json`), Marcus enforces OCC Heightened Standards (`12 CFR Part 30`), PCI-DSS v4.0 (`PAN`/`SSN`), CareCredit HIPAA BAA (`MRN`/`ICD-10`), AWS ROSA OpenShift Envoy Service Mesh (`mesh.syf.bank/injected: "true"`, mTLS 1.3), and dynamic Executive Curveball blast-radius analysis.
+**Marcus (`arch-agent`)** is the Chief Information Security Officer (CISO) and Enterprise Architecture agent (modeled for a large financial institution). Built on **Google ADK 2.0 (`Workflow` Graph + `JoinNode`)** and deployed on **Google Cloud Run** as a remote **Agent-to-Agent (A2A) JSON-RPC** server (`/.well-known/agent-card.json`), Marcus enforces OCC Heightened Standards (`12 CFR Part 30`), PCI-DSS v4.0 (`PAN`/`SSN`), CareCredit HIPAA BAA (`MRN`/`ICD-10`), AWS ROSA OpenShift Envoy Service Mesh (`mesh.syf.bank/injected: "true"`, mTLS 1.3), and dynamic Executive Curveball blast-radius analysis.
 
 ---
 
@@ -16,9 +16,9 @@
 
 ## 2. Core Tools (`app/tools.py` & `app/agent.py`)
 
-- **`get_architecture_standards`** *(via `syf-mcp-server` `McpToolset`)*: Retrieves official Synchrony CISO & CTO governance standards (`seed_data/architecture_standards.json` in GCS).
+- **`get_architecture_standards`** *(via `syf-mcp-server` `McpToolset`)*: Retrieves official enterprise CISO & CTO governance standards (`seed_data/architecture_standards.json` in GCS).
 - **`get_workspace_document` / `patch_document_section`** *(via `syf-mcp-server`)*: Reads living `PRD-AI-EVAL-101.md` / `ADR-001-Eval-Gateway.md` and applies surgical architectural redlines.
-- **`evaluate_curveball_impact`**: Evaluates scripted (`CB-1`..`CB-4`) and unscripted developer/executive curveballs by querying StackOverflow API v2.3, GitHub Issues API, Reddit API, and Synchrony governance rules to compute blast radius, agile sprint savings, and remediation controls.
+- **`evaluate_curveball_impact`**: Evaluates scripted (`CB-1`..`CB-4`) and unscripted developer/executive curveballs by querying StackOverflow API v2.3, GitHub Issues API, Reddit API, and enterprise governance rules to compute blast radius, agile sprint savings, and remediation controls.
 - **`list_syf_skills` / `load_syf_skill`**: Loads `syf-zero-trust-compliance` and `syf-executive-curveball-playbook`.
 
 ---

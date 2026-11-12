@@ -1,6 +1,6 @@
 # `vpm-agent` — Alex (Root Virtual Product Manager Orchestrator)
 
-**Alex (`vpm-agent`)** is the root orchestrator for the Synchrony Financial Virtual Product Manager platform. Built on **Google ADK 2.0 (`Workflow` Graph Orchestration, `@node`, `JoinNode`)** with **A2UI v0.9** interactive 3-card surfaces and deployed on **Vertex AI Agent Runtime (`ReasoningEngine`)**, Alex coordinates cross-functional product discovery, delegates financial and security audits in parallel to **Morgan (`finops-agent`)** and **Marcus (`arch-agent`)**, stages "Cursor-style" redline diffs on living Confluence & GCS specifications, enforces a Human-in-the-Loop (HITL) approval gate, and commits approved PRDs, ADRs, and 8 Sprint 1 Jira stories via `syf-mcp-server`.
+**Alex (`vpm-agent`)** is the root orchestrator for the Virtual Product Manager platform (modeled for a large financial institution). Built on **Google ADK 2.0 (`Workflow` Graph Orchestration, `@node`, `JoinNode`)** with **A2UI v0.9** interactive 3-card surfaces and deployed on **Vertex AI Agent Runtime (`ReasoningEngine`)**, Alex coordinates cross-functional product discovery, delegates financial and security audits in parallel to **Morgan (`finops-agent`)** and **Marcus (`arch-agent`)**, stages "Cursor-style" redline diffs on living Confluence & GCS specifications, enforces a Human-in-the-Loop (HITL) approval gate, and commits approved PRDs, ADRs, and 8 Sprint 1 Jira stories via `syf-mcp-server`.
 
 ![Reference Architecture](../assets/reference-architecture.png)
 
@@ -67,6 +67,6 @@ uv run agents-cli publish gemini \
   --app-id "$GEMINI_ENTERPRISE_APP_ID" \
   --location global \
   --agent-engine-id "$VPM_ENGINE_ID" \
-  --display-name "Alex - Synchrony Virtual PM" \
-  --description "Root Virtual Product Manager Orchestrator for Synchrony Financial"
+  --display-name "Alex - Enterprise Virtual PM" \
+  --description "Root Virtual Product Manager Orchestrator"
 ```

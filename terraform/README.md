@@ -1,6 +1,6 @@
 # Terraform Infrastructure-as-Code (`terraform/`)
 
-Declarative Google Cloud foundation for the **Synchrony Financial Virtual Product Manager (VPM)** multi-agent platform.
+Declarative Google Cloud foundation for the **AI-Driven Virtual Product Manager (VPM)** multi-agent platform (modeled for a large financial institution).
 
 > **Note on Hybrid Provisioning**: Terraform provisions all foundational Google Cloud resources (APIs, IAM Service Accounts, Artifact Registry, Secret Manager containers, the versioned GCS Living Workspace Bucket seeded with `seed_data/`, `workspace_artifacts/`, and `shared_skills/`, plus optional Cloud Run v2 services). Python ADK 2.0 `Workflow` agents deployed to **Vertex AI Agent Runtime (`ReasoningEngine`)** (`vpm-agent`, `finops-agent`, `dev-agent`) are packaged and deployed via `agents-cli deploy` (see the root [`README.md`](../README.md)).
 

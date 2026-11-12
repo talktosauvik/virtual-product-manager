@@ -1,5 +1,5 @@
 # ============================================================================
-# Synchrony Virtual Product Manager (VPM) — Terraform Variables Template
+# AI-Driven Virtual Product Manager (VPM) — Terraform Variables Template
 # Copy to `terraform.tfvars` (git-ignored) and fill in your GCP & SDLC values.
 # ============================================================================
 
