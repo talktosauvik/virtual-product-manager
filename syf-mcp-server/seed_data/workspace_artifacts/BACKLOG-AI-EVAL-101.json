@@ -1,85 +1,17 @@
 {
   "epic_key": "AI-EVAL-101",
-  "live_jira_epic_key": "SYF-5",
-  "epic_title": "Synchrony Enterprise GenAI Evaluation & Observability Gateway (Langfuse Self-Hosted)",
-  "status": "PENDING_APPROVAL",
-  "human_approved": false,
-  "approved_by": null,
-  "version": "1.0",
-  "squad_size_developers": 5,
-  "velocity_story_points_per_sprint": 32,
-  "cost_per_story_point_usd": 500,
-  "cost_per_sprint_usd": 16000,
-  "baseline_sprints": 6,
-  "curveball_sprint_delta": 0,
-  "total_sprints": 6,
-  "total_story_points": 192,
-  "annual_tco_selected_usd": 76000,
-  "annual_savings_vs_arize_usd": 109000,
-  "stories": [
-    {
-      "story_id": "AI-STORY-101",
-      "live_jira_key": "SYF-6",
-      "title": "Deploy Self-Hosted Langfuse v3 & ClickHouse Cluster in Synchrony Private VPC (ROSA OpenShift)",
-      "squad": "SYF-Platform-Mesh-Squad",
-      "story_points": 48,
-      "sprint": "Sprint 1-2",
-      "status": "READY_FOR_SPRINT",
-      "bitbucket_branch": "feature/AI-EVAL-101-langfuse-clickhouse-deploy",
-      "gherkin_acceptance_criteria": [
-        "Given the Synchrony private VPC runtime, When Langfuse v3 and ClickHouse containers are deployed on UBI9 (UID 1001), Then 100% of telemetry spans remain inside Synchrony private subnets with zero external egress.",
-        "Given 5M monthly telemetry spans, When ClickHouse is queried for evaluation traces, Then P95 query latency is under 200ms."
-      ]
-    },
-    {
-      "story_id": "AI-STORY-102",
-      "live_jira_key": "SYF-7",
-      "title": "Build FastAPI OpenTelemetry W3C TraceContext Collector Proxy with Microsoft Entra ID OAuth 2.0 Auth",
-      "squad": "SYF-AI-FinOps-Squad",
-      "story_points": 48,
-      "sprint": "Sprint 2-3",
-      "status": "READY_FOR_SPRINT",
-      "bitbucket_branch": "feature/AI-EVAL-101-otel-proxy-entraid-auth",
-      "gherkin_acceptance_criteria": [
-        "Given an incoming LLM telemetry request with a W3C traceparent header and Entra ID Bearer JWT, When the proxy validates the token, Then total proxy P95 overhead stays strictly <25ms.",
-        "Given a missing traceparent header, When the proxy ingests the span, Then it synthesizes a compliant W3C TraceContext ID before forwarding asynchronously."
-      ]
-    },
-    {
-      "story_id": "AI-STORY-103",
-      "live_jira_key": "SYF-8",
-      "title": "Implement Safe Inline PCI-DSS v4.0 (PAN/SSN) & CareCredit HIPAA (MRN/ICD-10) Regex + Model Armor Scrubber",
-      "squad": "SYF-SecOps-DLP-Squad",
-      "story_points": 48,
-      "sprint": "Sprint 4-5",
-      "status": "READY_FOR_SPRINT",
-      "bitbucket_branch": "feature/AI-EVAL-101-inline-pci-hipaa-scrubber",
-      "gherkin_acceptance_criteria": [
-        "Given a telemetry span containing a 16-digit PAN, 9-digit SSN, or CareCredit MRN, When sanitize_telemetry_payload() executes via json.dumps and compiled regex, Then sensitive tokens are replaced with [REDACTED_PAN], [REDACTED_SSN], and [REDACTED_MRN].",
-        "Given security static analysis in Bitbucket Pipelines, When proxy_gateway.py is scanned, Then zero eval() calls exist."
-      ]
-    },
-    {
-      "story_id": "AI-STORY-104",
-      "live_jira_key": "SYF-9",
-      "title": "Configure Baseline Kong Enterprise API Gateway v3.4 Ingress, TLS 1.3 Termination & Rate Limiting",
-      "squad": "SYF-Platform-Mesh-Squad",
-      "story_points": 48,
-      "sprint": "Sprint 5-6",
-      "status": "READY_FOR_SPRINT",
-      "bitbucket_branch": "feature/AI-EVAL-101-baseline-gateway-ingress",
-      "gherkin_acceptance_criteria": [
-        "Given North-South evaluation gateway traffic, When requests traverse the API Gateway ingress tier, Then TLS 1.3 termination and per-tenant rate limits are enforced with <25ms P95 latency.",
-        "Given internal service telemetry, When spans are forwarded to the FastAPI OTel Collector Proxy, Then zero plain-text token leakage occurs in container logs."
-      ]
-    }
-  ],
+  "jira_epic_key": "SYF-5",
+  "epic_title": "Synchrony Enterprise AI Evaluation & Observability Gateway (Langfuse Self-Hosted on ROSA)",
+  "owner_squad": "SYF-Platform-Mesh-Squad",
+  "target_release": "2026.Q4",
+  "architecture_revision": "v1.0",
+  "status": "DRAFT",
+  "total_story_points": 0,
+  "stories": [],
+  "staged_custom_spec": null,
+  "approved_custom_spec": null,
   "committed_jira_tickets": [
-    "SYF-5",
-    "SYF-6",
-    "SYF-7",
-    "SYF-8",
-    "SYF-9"
+    "SYF-5"
   ],
   "bitbucket_prs": []
 }

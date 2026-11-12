@@ -1,0 +1,26 @@
+# ============================================================================
+# Synchrony Virtual Product Manager (VPM) — Terraform Variables Template
+# Copy to `terraform.tfvars` (git-ignored) and fill in your GCP & SDLC values.
+# ============================================================================
+
+project_id            = "your-gcp-project-id"
+region                = "us-central1"
+genai_location        = "global"
+workspace_bucket_name = "" # Defaults to "<project_id>-syf-vpm-workspace"
+
+model_name            = "gemini-3-flash-preview"
+specialist_model_name = "gemini-3.5-flash-lite"
+
+# Optional: Set to true after pushing images to Artifact Registry
+deploy_cloud_run_services = false
+mcp_server_image          = ""
+arch_agent_image          = ""
+
+# Enterprise SDLC Identifiers (Tokens are stored in Auth Manager / Secret Manager, never here)
+atlassian_domain     = "your-domain.atlassian.net"
+atlassian_email      = "you@example.com"
+confluence_space_key = "SD"
+jira_project_key     = "SYF"
+jira_epic_key        = "SYF-5"
+bitbucket_workspace  = "your-bitbucket-workspace"
+bitbucket_repo_slug  = "syf-eval-gateway"

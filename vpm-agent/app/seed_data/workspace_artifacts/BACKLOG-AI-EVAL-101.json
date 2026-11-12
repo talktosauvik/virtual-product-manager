@@ -1,0 +1,17 @@
+{
+  "epic_key": "AI-EVAL-101",
+  "jira_epic_key": "SYF-5",
+  "epic_title": "Synchrony Enterprise AI Evaluation & Observability Gateway (Langfuse Self-Hosted on ROSA)",
+  "owner_squad": "SYF-Platform-Mesh-Squad",
+  "target_release": "2026.Q4",
+  "architecture_revision": "v1.0",
+  "status": "DRAFT",
+  "total_story_points": 0,
+  "stories": [],
+  "staged_custom_spec": null,
+  "approved_custom_spec": null,
+  "committed_jira_tickets": [
+    "SYF-5"
+  ],
+  "bitbucket_prs": []
+}

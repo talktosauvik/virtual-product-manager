@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "organization": "Synchrony Financial (SYF)",
+    "division": "AI Center of Excellence (CAIO: Nimrod Barak / VP AI Innovation: Dan Weis)",
+    "currency": "USD",
+    "last_updated": "2026-11-01",
+    "baseline_monthly_spans_millions": 5.0,
+    "gecx_surge_monthly_spans_millions": 50.0,
+    "gcs_uri": "gs://vertexai-l300-capstone-syf-vpm-workspace/seed_data/eval_vendor_benchmarks.json",
+    "authenticated_gcs_url": "https://storage.cloud.google.com/vertexai-l300-capstone-syf-vpm-workspace/seed_data/eval_vendor_benchmarks.json"
+  },
+  "vendors": {
+    "arize_ax": {
+      "vendor_id": "arize_ax",
+      "vendor_name": "Arize AX Enterprise",
+      "base_annual_license_usd": 85000.0,
+      "cost_per_million_spans_usd": 1666.6667,
+      "rosa_compute_base_annual_usd": 0.0,
+      "rosa_compute_per_additional_10m_spans_usd": 0.0,
+      "p95_ingestion_latency_ms": 85.0,
+      "pci_dss_zero_egress_compliant": false,
+      "carecredit_hipaa_compliant": false
+    },
+    "braintrust": {
+      "vendor_id": "braintrust",
+      "vendor_name": "Braintrust Enterprise",
+      "base_annual_license_usd": 60000.0,
+      "cost_per_million_spans_usd": 1200.0,
+      "rosa_compute_base_annual_usd": 3000.0,
+      "rosa_compute_per_additional_10m_spans_usd": 4666.6667,
+      "p95_ingestion_latency_ms": 48.0,
+      "pci_dss_zero_egress_compliant": false,
+      "carecredit_hipaa_compliant": false
+    },
+    "langfuse": {
+      "vendor_id": "langfuse",
+      "vendor_name": "Langfuse v3",
+      "base_annual_license_usd": 36000.0,
+      "cost_per_million_spans_usd": 0.0,
+      "rosa_compute_base_annual_usd": 40000.0,
+      "rosa_compute_per_additional_10m_spans_usd": 12000.0,
+      "p95_ingestion_latency_ms": 13.8,
+      "pci_dss_zero_egress_compliant": true,
+      "carecredit_hipaa_compliant": true
+    }
+  }
+}

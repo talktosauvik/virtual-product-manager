@@ -11,13 +11,17 @@ import re
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 from google.cloud import storage
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "vertexai-l300-capstone")
-BUCKET_NAME = os.environ.get(
-    "SYF_WORKSPACE_BUCKET", f"{PROJECT_ID}-syf-vpm-workspace"
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
+BUCKET_NAME = os.getenv(
+    "SYF_WORKSPACE_BUCKET",
+    f"{PROJECT_ID}-syf-vpm-workspace" if PROJECT_ID else "",
 )
 LOCAL_SEED_DIR = Path(__file__).parent / "seed_data"
 
@@ -166,6 +170,25 @@ class SyfGcsWorkspaceStore:
         if not replacement_block.startswith("##"):
             replacement_block = f"{target_header}\n{replacement_block}"
 
+        # Ensure Cursor-style Red/Green diff lines are present in the patched section for Confluence rendering
+        if "[-REMOVED-]" not in replacement_block and "Removed (v1.0)" not in replacement_block and "🔴" not in replacement_block:
+            red_line = (
+                "[-REMOVED-] **Removed (v1.0)**: Prior v1.0 baseline specification for "
+                f"`{target_header.lstrip('#').strip()}` superseded by v1.1 architectural remediation."
+            )
+            green_line = (
+                f"[+ADDED+] **Added (v1.1)**: {edit_reason.strip()}"
+            )
+            header_first_nl = replacement_block.find("\n")
+            if header_first_nl != -1:
+                replacement_block = (
+                    replacement_block[: header_first_nl + 1]
+                    + f"\n{red_line}\n\n{green_line}\n\n"
+                    + replacement_block[header_first_nl + 1 :].lstrip()
+                )
+            else:
+                replacement_block = f"{replacement_block}\n\n{red_line}\n\n{green_line}\n"
+
         # Match from target_header up to the next `## ` header or EOF
         escaped_header = re.escape(target_header)
         pattern = re.compile(
@@ -176,12 +199,12 @@ class SyfGcsWorkspaceStore:
         if pattern.search(original_content):
             updated_content = pattern.sub(f"{replacement_block}\n\n", original_content, count=1)
         else:
-            # Fallback: match by section number prefix (e.g. "## 4.")
-            num_match = re.match(r"^(##\s*\d+\.)", target_header)
+            # Fallback: match by section number (e.g. "## 4." or "## Section 4:")
+            num_match = re.search(r"(\d+)", target_header)
             if num_match:
-                prefix_escaped = re.escape(num_match.group(1))
+                sec_num = num_match.group(1)
                 fallback_pattern = re.compile(
-                    rf"(^{prefix_escaped}[^\n]*\n.*?)(?=^## |\Z)",
+                    rf"(^##\s*(?:Section\s*)?{sec_num}[\.:][^\n]*\n.*?)(?=^## |\Z)",
                     re.MULTILINE | re.DOTALL,
                 )
                 if fallback_pattern.search(original_content):
@@ -193,10 +216,11 @@ class SyfGcsWorkspaceStore:
             else:
                 updated_content = original_content.rstrip() + f"\n\n{replacement_block}\n"
 
-        # Bump version in YAML frontmatter if present (e.g., version: "1.0" -> "1.1")
+        # Bump version in YAML frontmatter or top Markdown Metadata Table (v1.0 -> v1.1)
         old_version = "1.0"
         new_version = "1.1"
         ver_match = re.search(r'^version:\s*"?(\d+)\.(\d+)"?', updated_content, re.MULTILINE)
+        table_ver_match = re.search(r"\|\s*\*\*Version\*\*\s*\|\s*`?v?(\d+)\.(\d+)[^|]*\|", updated_content)
         if ver_match:
             major, minor = int(ver_match.group(1)), int(ver_match.group(2))
             old_version = f"{major}.{minor}"
@@ -208,6 +232,23 @@ class SyfGcsWorkspaceStore:
                 count=1,
                 flags=re.MULTILINE,
             )
+        elif table_ver_match:
+            major, minor = int(table_ver_match.group(1)), int(table_ver_match.group(2))
+            old_version = f"{major}.{minor}"
+            new_version = f"{major}.{minor + 1}"
+
+        updated_content = re.sub(
+            r"\|\s*\*\*Version\*\*\s*\|\s*[^|]+\|",
+            f"| **Version** | `v{new_version}` |",
+            updated_content,
+            count=1,
+        )
+        updated_content = re.sub(
+            r"\|\s*\*\*Status\*\*\s*\|\s*`?DRAFT`?\s*\|",
+            "| **Status** | `DRAFT (Pending HITL Approval)` |",
+            updated_content,
+            count=1,
+        )
 
         # Compute unified diff
         diff_lines = list(

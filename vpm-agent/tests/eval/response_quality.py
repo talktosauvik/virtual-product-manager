@@ -3,9 +3,12 @@
 import os
 import threading
 
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
+
+load_dotenv()
 
 _local = threading.local()
 
@@ -21,7 +24,7 @@ def _client() -> genai.Client:
     if client is None:
         client = _local.client = genai.Client(
             vertexai=True,
-            project=os.environ.get("GOOGLE_CLOUD_PROJECT", "vertexai-l300-capstone"),
+            project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
             location="global",
         )
     return client

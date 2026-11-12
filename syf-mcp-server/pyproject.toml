@@ -12,4 +12,5 @@ dependencies = [
     "google-cloud-agentidentitycredentials>=0.1.2",
     "starlette>=0.40.0,<1.0.0",
     "uvicorn>=0.32.0",
+    "python-dotenv>=1.0.1",
 ]

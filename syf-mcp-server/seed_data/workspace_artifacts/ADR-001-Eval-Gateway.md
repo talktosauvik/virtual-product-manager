@@ -1,32 +1,31 @@
----
-document_id: ADR-001-Eval-Gateway
-title: "ADR-001: Dual-Cloud OpenTelemetry & Zero-PII Architecture (Langfuse v3 Self-Hosted)"
-owner: Marcus (SYF Enterprise Architecture Specialist) & Morgan (SYF FinOps Analyst)
-status: DRAFT
-version: "1.0"
----
+# ADR-001: Architectural Decision Record — Synchrony Zero-Egress AI Evaluation & DLP Gateway
 
-# ADR-001: Enterprise GenAI Evaluation & Observability Gateway Architecture
+| Metadata Field | Value |
+| :--- | :--- |
+| **ADR ID** | `ADR-001-Eval-Gateway` |
+| **Version** | `v1.0` |
+| **Status** | `DRAFT` |
+| **Architect** | Marcus (Enterprise Architect & CISO Governance Advisor) |
+| **Product Owner** | Alex (Synchrony Virtual Product Manager) |
+| **Linked PRD / Epic** | `PRD-AI-EVAL-101` / Jira Epic `SYF-5` (`AI-EVAL-101`) |
+
+---
 
 ## 1. Context & Problem Statement
-Synchrony Financial requires an enterprise-grade GenAI evaluation and OpenTelemetry (`W3C TraceContext`) observability platform capable of processing 5M monthly telemetry spans today and scaling to 50M monthly spans across 9,000 GECX contact center agents, while enforcing strict PCI-DSS v4.0 and CareCredit HIPAA zero-egress mandates under a `<25ms` P95 latency ceiling.
+Synchrony Financial requires an enterprise-wide LLM evaluation and OpenTelemetry (OTel) observability platform for Credit Servicing, Fraud Operations, and **CareCredit** (Healthcare Financing). Because telemetry spans contain Tier-1 Cardholder Data (`PAN`, `SSN`) and CareCredit Protected Health Information (`MRN`, `ICD-10`), Synchrony's CISO mandates **100% Zero-Egress** inside Synchrony's private **AWS ROSA OpenShift VPC (`us-east-1`)** and **<25ms P95** inline ingestion latency across **5M to 50M monthly spans**.
 
-## 2. FinOps vs. Security Trade-Off Analysis (Morgan vs. Marcus)
-- **FinOps Perspective (Morgan)**:
-  - Usage-based SaaS per-span pricing creates severe financial exposure at Synchrony scale. **Arize AX Enterprise** costs **$185,000/yr** at 5M spans/month and balloons to **$1,085,000/yr** at 50M spans/month; **Braintrust Enterprise** costs **$135,000/yr** at 5M spans/month and **$804,000/yr** at 50M spans/month.
-  - **Self-Hosted Langfuse Enterprise v3** eliminates per-span ingestion fees (`$36,000/yr` base license + `$40,000/yr` ROSA ClickHouse compute = **`$76,000/yr`** at 5M spans/mo, and **`$130,000/yr`** at 50M spans/mo), delivering **$109,000/yr to $955,000/yr in net annual FinOps savings**.
-- **Enterprise Architecture & CISO Perspective (Marcus)**:
-  - **Arize AX (Multi-Tenant SaaS)** and **Braintrust (Hybrid SaaS)** are **REJECTED** under policy `SYF-SEC-PCI-001` and `SYF-SEC-HIPAA-002` due to external cloud egress of Tier-1 Cardholder Data (`PAN`, `SSN`) and CareCredit PHI (`MRN`, `ICD-10`).
-  - **Self-Hosted Langfuse Enterprise v3** deployed inside Synchrony's private VPC satisfies 100% of CISO zero-egress, Microsoft Entra ID OAuth 2.0, and `<25ms` P95 latency requirements.
+---
 
-## 3. Decision Outcome & Selected Architecture
-We select **Self-Hosted Langfuse Enterprise v3** (backed by ClickHouse columnar storage) fronted by a custom **FastAPI OpenTelemetry Collector & Inline DLP Proxy (`syf-eval-gateway`)** running on hardened Red Hat UBI9 Python 3.12 containers (`UID 1001`) inside Synchrony's private VPC.
+## 2. Candidate Options Under Review (FinOps & CISO Audit Scope)
+1. **Option A — Arize AX Enterprise (Multi-Tenant SaaS)**: `$85,000/yr` base + `$1,666.67/1M spans` (`$185,000/yr` at 5M spans/mo; `$1,085,000/yr` at 50M spans/mo). `38.0ms P95` cross-cloud ingestion latency.
+2. **Option B — Braintrust Enterprise (Hybrid Cloud)**: `$60,000/yr` base + `$1,250.00/1M spans` (`$135,000/yr` at 5M spans/mo; `$804,000/yr` at 50M spans/mo). `24.0ms P95` hybrid proxy latency.
+3. **Option C — Self-Hosted Langfuse Enterprise v3 on AWS ROSA OpenShift**: `$36,000/yr` Enterprise license + `$40,000/yr` ROSA OpenShift compute & ClickHouse v24.3 storage (`$76,000/yr` at 5M spans/mo; `$130,000/yr` at 50M spans/mo with `$0` per-span fees). `13.8ms P95` in-VPC ingestion latency.
 
-## 4. Network Ingress, Identity & Inline DLP Controls
-- **Authentication**: Microsoft Entra ID OAuth 2.0 / OIDC JWT bearer token validation and strict `mTLS 1.3` encryption across all endpoints.
-- **Inline Sanitization**: Safe `json.dumps()` + compiled regex scrubbing (`PAN`, `SSN`, `MRN`, `ICD-10`) + `json.loads()` alongside Google Cloud Model Armor (`syf-pci-hipaa-strict-v2`) prior to asynchronous ClickHouse persistence (strictly forbidding `eval()`).
-- **Baseline API Gateway Ingress**: Routed via Synchrony's existing **Kong Enterprise API Gateway v3.4** with TLS 1.3 termination and per-tenant rate limiting.
+---
 
-## 5. Consequences, Delivery Velocity & Operational SLAs
-- **Delivery Baseline**: **6 Sprints (12 Weeks, 192 Story Points)** at **32 Story Points per 2-week sprint** (`$500/SP` = `$16,000/sprint`).
-- **Operational Impact**: Saves **$109,000/yr** immediately (`$955,000/yr` at GECX 50M scale); achieves `14.0ms` baseline P95 proxy latency (`<25ms` SLA); 100% PCI-DSS v4.0 and CareCredit HIPAA compliant.
+## 3. Target Architecture & CISO Compliance Controls
+- **Compute Runtime**: Red Hat UBI9 Python 3.12 non-root (`UID 1001`) FastAPI OpenTelemetry Collector & DLP Proxy deployed on AWS ROSA OpenShift 4.15 (`us-east-1`).
+- **Inline Deterministic DLP Scrubber**: Compiled regex patterns via `json.dumps()`/`json.loads()` (`0` `eval()` calls) scrubbing `[REDACTED_PAN]`, `[REDACTED_SSN]`, `[REDACTED_MRN]`, and `[REDACTED_ICD10]` in `4.2ms` P95.
+- **Identity & Auth**: Microsoft Entra ID OAuth 2.0 / OIDC JWT verification using an asynchronous local JWKS keyset cache (`300s` TTL, `1.8ms` overhead) + mTLS 1.3.
+- **Storage Backend**: 3-node ZSTD-compressed ClickHouse v24.3 cluster (`10x` columnar compression) + PostgreSQL 16 inside Synchrony's private AWS ROSA VPC.
+- **Ingress Topology (Baseline v1.0)**: North-South API traffic routes through **Kong Enterprise API Gateway v3.4** with TLS 1.3 termination and per-tenant rate limiting.

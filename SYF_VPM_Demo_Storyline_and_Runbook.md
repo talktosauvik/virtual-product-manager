@@ -2,6 +2,10 @@
 
 > **Aligned 1:1 with SSD Section 2.1 (Personas) & Section 2.2 ("FinOps Evaluation, The Wicked Curveball, and Code Generation") + FSR Field Notes ("Mimic Cursor", "Pull in Antigravity", "Integrate with their SDLC") + Lab 3 (`APEX013`) Agent Identity Auth Manager**
 
+![Overall Demo Flow & Scaffolding](./assets/demo-scaffolding-flow.png)
+
+![Reference Architecture](./assets/reference-architecture.png)
+
 ---
 
 ## 1. One-Slide Executive Storyline (Ready to Paste on a Single Slide)
@@ -33,7 +37,7 @@ flowchart LR
 | Persona | Name / Identifier | Runtime & Identity (Lab 3 `APEX013`) | Model & Thinking | Operational Role in Demo |
 | :--- | :--- | :--- | :--- | :--- |
 | **Executive Sponsor** | **Dan Weis** | Human Evaluator (`user_id="dan_weis_ai_innovation"`) | Human-in-the-Loop | VP of AI Innovation at SYF. Challenges agents with FinOps TCO, security rules, and sudden curveballs; controls the HITL approval gate. |
-| **Virtual Product Manager (VPM)** ⭐ | **Alex** (`vpm-agent`) | **Vertex AI Agent Runtime** (`8155381483301765120` — SPIFFE Principal) | `gemini-3.8-flash` (`MEDIUM`) | Root orchestrator. Loads Antigravity skills, coordinates Morgan/Marcus/Devin, applies Cursor-style unified diffs to `PRD-AI-EVAL-101.md`, enforces HITL gate. |
+| **Virtual Product Manager (VPM)** ⭐ | **Alex** (`vpm-agent-a2ui`) | **Vertex AI Agent Runtime** (`4697195312597434368` — SPIFFE Principal + A2UI v0.9) | `gemini-3.8-flash` (`MEDIUM`) | Root orchestrator. Renders A2UI v0.9 interactive 3-Card canvases, loads Antigravity skills, coordinates Morgan/Marcus/Devin, applies Cursor-style unified diffs to `PRD-AI-EVAL-101.md`, enforces HITL gate. |
 | **Deep Research & FinOps Analyst** | **Morgan** (`finops-agent`) | **Vertex AI Agent Runtime** (`1052078971031650304` — SPIFFE Principal) | `gemini-3.5-flash-lite` (`LOW`) | Combines **Google Search Grounding (`google_search`) + Vertex AI Search** with internal FastMCP FinOps DB (`query_vendor_cost_benchmarks`) to compare Arize, Braintrust, and Langfuse. |
 | **Enterprise Architecture Specialist** | **Marcus** (`syf-arch-agent`) | **Google Cloud Run** (`syf-arch-agent-sa` — A2A JSON-RPC) | `gemini-3.5-flash-lite` (`LOW`) | Enforces zero-trust Entra ID JWKS auth, PCI-DSS v4.0 / CareCredit HIPAA zero-egress, and resolves the Q1 Kong Gateway deprecation curveball. |
 | **Developer / Scaffolding Agent** | **Devin** (`syf-dev-agent`) | **Google Cloud Run** (`syf-dev-agent-sa` — A2A JSON-RPC) | `gemini-3.5-flash-lite` (`LOW`) | Takes approved PRD & Jira stories and generates runnable Red Hat OpenShift (ROSA) UBI9 `Dockerfile`, `proxy_gateway.py`, and `k8s_deployment.yaml`. |

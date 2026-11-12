@@ -1,31 +1,53 @@
 #!/usr/bin/env python3
-"""1-Command Demo Reset Script for Synchrony Virtual Product Manager (VPM).
+"""1-Command Clean-Slate Demo Reset Script for Synchrony Virtual Product Manager (VPM).
 
-Restores:
-1. GCS Workspace artifacts (`PRD-AI-EVAL-101.md`, `ADR-001-Eval-Gateway.md`, `BACKLOG-AI-EVAL-101.json`)
-   back to the clean `v1 (DRAFT)` Kong Enterprise Gateway v3.4 baseline so Turn 2's Cursor-style
-   unified diff (`- Kong v3.4` / `+ Synchrony Envoy Service Mesh`) is always fresh.
-2. Live Confluence Cloud (`PRD-AI-EVAL-101` page `163985` & `ADR-001-Eval-Gateway` page `131074`)
-   back to the `DRAFT` Kong baseline content (incrementing the Confluence page revision cleanly).
-3. Optional (`--prune-rehearsal-jira`): Deletes any rehearsal delta Jira tickets (`SYF-10+`) in Project `SYF`
-   while strictly preserving the 5 core baseline issues (`SYF-5` Epic and `SYF-6`..`SYF-9` Stories).
+Wipes the slate 100% clean before or after any test run:
+1. Jira (`SYF` Project): Deletes ALL issues `SYF-6` and above so Sprint 1 starts 100% blank,
+   preserving only the Master Epic `SYF-5` (reset to `v1.0 DRAFT` 6-sprint baseline).
+2. Confluence Cloud (`PRD-AI-EVAL-101.md` & `ADR-001-Eval-Gateway.md`): Restores clean `v1.0 DRAFT`
+   (4 sections, no pre-baked TCO verdicts in Sec 2, 3-column CISO table in Sec 3, Kong v3.4 baseline in Sec 4).
+3. Bitbucket Cloud (`syf-eval-gateway`): Declines all open Pull Requests and deletes all `feature/*` branches
+   so only `main` remains.
+4. GCS Workspace (`gs://${SYF_WORKSPACE_BUCKET}`):
+   - Uploads clean `seed_data/architecture_standards.json` and `seed_data/eval_vendor_benchmarks.json`
+   - Resets `workspace_artifacts/PRD-AI-EVAL-101.md` and `ADR-001-Eval-Gateway.md` to `v1.0 DRAFT`
+   - Resets `workspace_artifacts/BACKLOG-AI-EVAL-101.json` to `"stories": []`, `"staged_custom_spec": null`, `"approved_custom_spec": null`
+   - Deletes all blobs under `scaffolded_code/`
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
+import urllib.parse
 import urllib.request
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR / "syf-mcp-server"))
+MCP_DIR = ROOT_DIR / "syf-mcp-server" if (ROOT_DIR / "syf-mcp-server").exists() else Path(__file__).resolve().parent
+VENV_PYTHON = (
+    MCP_DIR / ".venv" / "bin" / "python"
+    if (MCP_DIR / ".venv" / "bin" / "python").exists()
+    else ROOT_DIR / "vpm-agent" / ".venv" / "bin" / "python"
+)
+try:
+    import google.cloud.agentidentitycredentials_v1  # noqa: F401
+except ImportError:
+    if VENV_PYTHON.exists() and Path(sys.executable) != VENV_PYTHON:
+        os.execv(str(VENV_PYTHON), [str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
+
+sys.path.insert(0, str(MCP_DIR))
 
 from gcs_store import LOCAL_SEED_DIR, SyfGcsWorkspaceStore  # noqa: E402
 from live_sdlc_client import LiveAtlassianClient, LiveBitbucketClient  # noqa: E402
 
-PROTECTED_JIRA_KEYS = {"SYF-1", "SYF-2", "SYF-3", "SYF-4", "SYF-5", "SYF-6", "SYF-7", "SYF-8", "SYF-9"}
+PROTECTED_JIRA_KEYS = {"SYF-1", "SYF-2", "SYF-3", "SYF-4", "SYF-5"}
 
 
 def reset_gcs_and_confluence(sync_confluence: bool = True) -> dict[str, str]:
@@ -38,7 +60,7 @@ def reset_gcs_and_confluence(sync_confluence: bool = True) -> dict[str, str]:
         res = store.save_workspace_document(
             document_name=doc_name,
             content=content,
-            author="Demo Reset Script (Baseline v1 DRAFT — Kong v3.4)",
+            author="Dan Weis & Alex (SYF AI Platform)",
         )
         restored[doc_name] = res["gcs_uri"]
 
@@ -55,6 +77,16 @@ def reset_gcs_and_confluence(sync_confluence: bool = True) -> dict[str, str]:
                 f"seed_data/{seed_json_name}", seed_obj
             )
 
+    # Clear scaffolded_code/* in GCS
+    try:
+        bucket = store._get_bucket()
+        blobs = list(bucket.list_blobs(prefix="scaffolded_code/"))
+        for b in blobs:
+            b.delete()
+        restored["scaffolded_code_cleared"] = f"Deleted {len(blobs)} blobs under gs://{store.bucket_name}/scaffolded_code/"
+    except Exception as exc:
+        restored["scaffolded_code_cleared"] = f"Skipped ({exc})"
+
     if sync_confluence:
         atlassian = LiveAtlassianClient()
         if atlassian.is_configured:
@@ -64,7 +96,7 @@ def reset_gcs_and_confluence(sync_confluence: bool = True) -> dict[str, str]:
                     title=doc_name,
                     markdown_content=content,
                     space_key="SD",
-                    version_comment="Initial Baseline Architecture (Kong Enterprise API Gateway v3.4 Ingress — Pending FinOps & CISO Review)",
+                    version_comment="Reset to v1.0 DRAFT Baseline (Kong Enterprise API Gateway v3.4 Ingress — Pending FinOps & CISO Review)",
                     author="Dan Weis & Alex (SYF AI Platform)",
                 )
                 if conf_res:
@@ -80,16 +112,35 @@ def prune_rehearsal_jira_tickets() -> list[str]:
         return []
     deleted: list[str] = []
     try:
-        # Also reset Master Epic SYF-5 back to pre-curveball 6-sprint baseline
+        # Reset Master Epic SYF-5 back to pre-curveball 6-sprint baseline
         atlassian.update_anchor_epic(
             anchor_epic_key="SYF-5",
-            logical_epic_key="AI-EPIC-101",
-            epic_title="Synchrony Enterprise AI Evaluation & Governance Gateway (Baseline v1)",
+            logical_epic_key="AI-EVAL-101",
+            epic_title="Synchrony Enterprise AI Evaluation & Governance Gateway (Baseline v1.0 DRAFT)",
             executive_sponsor="Dan Weis (SVP AI Platform)",
             target_sprints=6,
             approved_budget_usd=76000,
         )
-        jql_url = f"https://{atlassian.domain}/rest/api/3/search/jql?jql=project%3DSYF&maxResults=50&fields=key,summary"
+        # Clean up any comments on SYF-5
+        try:
+            comm_url = f"https://{atlassian.domain}/rest/api/3/issue/SYF-5/comment"
+            comm_req = urllib.request.Request(comm_url, headers=atlassian._headers(), method="GET")
+            with urllib.request.urlopen(comm_req, timeout=8.0) as c_resp:
+                c_data = json.loads(c_resp.read().decode("utf-8"))
+                for c in c_data.get("comments", []):
+                    cid = c.get("id")
+                    if cid:
+                        del_c_req = urllib.request.Request(
+                            f"{comm_url}/{cid}",
+                            headers=atlassian._headers(),
+                            method="DELETE",
+                        )
+                        with urllib.request.urlopen(del_c_req, timeout=8.0):
+                            deleted.append(f"SYF-5:comment:{cid}")
+        except Exception as c_exc:
+            print(f"Warning: SYF-5 comment cleanup skipped: {c_exc}")
+
+        jql_url = f"https://{atlassian.domain}/rest/api/3/search/jql?jql=project%3DSYF&maxResults=100&fields=key,summary"
         req = urllib.request.Request(jql_url, headers=atlassian._headers(), method="GET")
         with urllib.request.urlopen(req, timeout=10.0) as resp:
             data = json.loads(resp.read().decode("utf-8"))
@@ -100,7 +151,7 @@ def prune_rehearsal_jira_tickets() -> list[str]:
                         key_num = int(key.split("-")[1])
                     except Exception:
                         continue
-                    if key_num >= 10:
+                    if key_num >= 6:
                         del_req = urllib.request.Request(
                             f"https://{atlassian.domain}/rest/api/3/issue/{key}",
                             headers=atlassian._headers(),
@@ -109,15 +160,16 @@ def prune_rehearsal_jira_tickets() -> list[str]:
                         with urllib.request.urlopen(del_req, timeout=8.0):
                             deleted.append(key)
     except Exception as exc:
-        print(f"Warning: Jira rehearsal ticket prune skipped: {exc}")
+        print(f"Warning: Jira ticket cleanup skipped: {exc}")
     return deleted
 
 
-def decline_open_bitbucket_prs() -> list[int]:
+def decline_open_bitbucket_prs() -> dict[str, list[str | int]]:
     bb = LiveBitbucketClient()
     if not bb.is_configured:
-        return []
+        return {"declined_prs": [], "deleted_branches": []}
     declined: list[int] = []
+    deleted_branches: list[str] = []
     api_base = f"https://api.bitbucket.org/2.0/repositories/{bb.workspace}/{bb.repo_slug}"
     try:
         list_req = urllib.request.Request(
@@ -145,36 +197,52 @@ def decline_open_bitbucket_prs() -> list[int]:
                     )
                     with urllib.request.urlopen(dec_req, timeout=10.0):
                         declined.append(int(pr_id))
+        # Delete any non-main branches in Bitbucket so only main remains
+        br_req = urllib.request.Request(
+            f"{api_base}/refs/branches?pagelen=50",
+            headers={
+                "Authorization": bb._auth_header(),
+                "Accept": "application/json",
+            },
+            method="GET",
+        )
+        with urllib.request.urlopen(br_req, timeout=10.0) as b_resp:
+            b_data = json.loads(b_resp.read().decode("utf-8"))
+            for br in b_data.get("values", []):
+                b_name = br.get("name", "")
+                if b_name and b_name != "main":
+                    del_b_req = urllib.request.Request(
+                        f"{api_base}/refs/branches/{urllib.parse.quote(b_name, safe='')}",
+                        headers={"Authorization": bb._auth_header()},
+                        method="DELETE",
+                    )
+                    with urllib.request.urlopen(del_b_req, timeout=10.0):
+                        deleted_branches.append(b_name)
     except Exception as exc:
-        print(f"Warning: Bitbucket open PR cleanup skipped: {exc}")
-    return declined
+        print(f"Warning: Bitbucket open PR/branch cleanup skipped: {exc}")
+    return {"declined_prs": declined, "deleted_branches": deleted_branches}
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Reset Synchrony VPM Demo State")
+    parser = argparse.ArgumentParser(description="Reset Synchrony VPM Demo State (Wipe Slate Clean)")
     parser.add_argument(
         "--no-confluence",
         action="store_true",
         help="Skip resetting live Confluence pages",
     )
-    parser.add_argument(
-        "--prune-rehearsal-jira",
-        action="store_true",
-        help="Delete rehearsal delta Jira tickets (SYF-10+) while preserving SYF-5..SYF-9",
-    )
     args = parser.parse_args()
 
     restored = reset_gcs_and_confluence(sync_confluence=not args.no_confluence)
     pruned = prune_rehearsal_jira_tickets()
-    declined_prs = decline_open_bitbucket_prs()
+    bb_cleanup = decline_open_bitbucket_prs()
     print(
         json.dumps(
             {
                 "status": "DEMO_STATE_RESET_COMPLETE",
                 "restored_artifacts": restored,
-                "pruned_rehearsal_jira_tickets": pruned,
-                "declined_open_bitbucket_prs": declined_prs,
-                "protected_baseline_jira_tickets": sorted(PROTECTED_JIRA_KEYS - {"SYF-1", "SYF-2", "SYF-3", "SYF-4"}),
+                "deleted_jira_tickets_syf_6_plus": pruned,
+                "bitbucket_cleanup": bb_cleanup,
+                "protected_master_epic": ["SYF-5"],
             },
             indent=2,
         )

@@ -1,0 +1,30 @@
+{
+  "organization": "Synchrony Financial (SYF)",
+  "architecture_review_board": "SYF Enterprise Architecture & Cyber Security Governance (CISO / CTO)",
+  "version": "2026.Q4",
+  "gcs_uri": "gs://vertexai-l300-capstone-syf-vpm-workspace/seed_data/architecture_standards.json",
+  "authenticated_gcs_url": "https://storage.cloud.google.com/vertexai-l300-capstone-syf-vpm-workspace/seed_data/architecture_standards.json",
+  "baseline_policies": {
+    "pci_dss_v4_and_carecredit_hipaa_zero_egress": {
+      "domain": "PCI-DSS v4.0 & CareCredit HIPAA Zero-Egress",
+      "title": "Tier-1 Cardholder Data (CHD) & CareCredit HIPAA PHI Zero-Egress Mandate",
+      "rule": "Zero external cloud egress for Tier-1 Cardholder Data (16-digit PAN, SSN) and CareCredit Healthcare PHI (MRN, ICD-10). No GenAI prompts, completions, or OpenTelemetry spans may egress to external multi-tenant or hybrid SaaS telemetry endpoints outside Synchrony's private AWS ROSA OpenShift VPC.",
+      "enforcement": "Inline deterministic regex scrubbing ([REDACTED_PAN], [REDACTED_SSN], [REDACTED_MRN], [REDACTED_ICD10]) via json.dumps()/json.loads() (zero eval()) inside the FastAPI OTel Collector Proxy (<15ms inline DLP budget) before persistence to self-hosted ClickHouse v24.3 + PostgreSQL 16 inside AWS ROSA (us-east-1)."
+    },
+    "identity_and_authentication": {
+      "domain": "Identity, Auth & Transport Encryption",
+      "title": "Microsoft Entra ID OAuth 2.0 / OIDC & Mutual TLS 1.3 Standard",
+      "rule": "All internal API and telemetry proxy endpoints must authenticate client SDKs using Microsoft Entra ID OAuth 2.0 / OIDC JWT bearer tokens (300s local asynchronous JWKS public keyset cache at 1.8ms verification overhead) alongside strict mTLS 1.3 transport encryption."
+    },
+    "inline_dlp_and_telemetry_ingestion_latency_sla": {
+      "domain": "Inline DLP & Telemetry Ingestion Latency SLA (<25ms)",
+      "title": "Inline DLP & Telemetry Ingestion Latency SLA (<25ms P95) & Red Hat UBI9 Non-Root Standard",
+      "rule": "End-to-end evaluation proxy and telemetry ingestion overhead inside Synchrony's AWS ROSA OpenShift VPC (us-east-1) must remain strictly under <25ms P95 (engineered at 13.8ms P95: 1.8ms cached Entra ID JWKS auth + 4.2ms inline regex DLP scrubbing + 7.8ms async OTel protobuf ring-buffer batching on Red Hat UBI9 Python 3.12 non-root UID 1001)."
+    },
+    "baseline_api_gateway_ingress": {
+      "domain": "Baseline v1.0 API Gateway Ingress",
+      "title": "Baseline v1.0 API Gateway Ingress Topology",
+      "rule": "In Baseline v1.0, North-South API traffic routes through Synchrony's existing Kong Enterprise API Gateway v3.4 with TLS 1.3 termination and per-tenant rate limiting."
+    }
+  }
+}

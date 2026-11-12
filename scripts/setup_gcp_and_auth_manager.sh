@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-vertexai-l300-capstone}"
-export REGION="${GOOGLE_CLOUD_REGION:-us-central1}"
-export BUCKET_NAME="${PROJECT_ID}-syf-vpm-workspace"
-export SYF_MCP_API_KEY="${SYF_MCP_API_KEY:-syf-enterprise-secret-key-2026}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export WORKSPACE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+if [[ -f "${WORKSPACE_ROOT}/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${WORKSPACE_ROOT}/.env"
+  set +a
+fi
+
+export PROJECT_ID="${GOOGLE_CLOUD_PROJECT:?GOOGLE_CLOUD_PROJECT must be set in .env or environment}"
+export REGION="${GOOGLE_CLOUD_LOCATION:-${GOOGLE_CLOUD_REGION:-us-central1}}"
+export BUCKET_NAME="${SYF_WORKSPACE_BUCKET:-${PROJECT_ID}-syf-vpm-workspace}"
 export AUTH_PROVIDER_ID="syf-mcp-auth-provider"
-export WORKSPACE_ROOT="/home/admin_/vertexai-l300-capstone/virtual-product-manager"
 
 echo "=== [1/4] Configuring GCP Project (${PROJECT_ID}) & Enabling APIs ==="
 gcloud config set project "${PROJECT_ID}"
@@ -51,7 +59,7 @@ if ! gcloud alpha agent-identity auth-providers describe "${AUTH_PROVIDER_ID}" \
   gcloud alpha agent-identity auth-providers create "${AUTH_PROVIDER_ID}" \
     --project="${PROJECT_ID}" \
     --location="${REGION}" \
-    --api-key="${SYF_MCP_API_KEY}" \
+    --api-key="${SYF_MCP_API_KEY:?SYF_MCP_API_KEY must be set in environment to create a new Auth Provider}" \
     --description="Synchrony Financial Enterprise MCP Auth Provider (Lab 3 APEX013)"
 else
   echo "Auth Provider ${AUTH_PROVIDER_ID} already exists."

@@ -20,6 +20,10 @@ import os
 from pathlib import Path
 import sys
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR / "syf-mcp-server"))
 

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 from google.adk.auth.credential_manager import CredentialManager
 from google.adk.integrations.agent_identity import (
     GcpAuthProvider,
@@ -15,59 +16,84 @@ from google.adk.integrations.agent_identity import (
 from google.adk.tools.mcp_tool import McpToolset, StreamableHTTPConnectionParams
 from google.cloud import storage
 
+load_dotenv()
+
 logger = logging.getLogger(__name__)
 
-PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "vertexai-l300-capstone")
-REGION = os.environ.get("GOOGLE_CLOUD_REGION", "us-central1")
-BUCKET_NAME = os.environ.get(
-    "SYF_WORKSPACE_BUCKET", f"{PROJECT_ID}-syf-vpm-workspace"
-)
-SYF_MCP_URL = os.environ.get(
-    "SYF_MCP_URL",
-    "https://syf-mcp-server-121190797389.us-central1.run.app/mcp",
-)
-SYF_MCP_AUTH_PROVIDER_URI = os.environ.get(
-    "SYF_MCP_AUTH_PROVIDER_URI",
-    f"projects/{PROJECT_ID}/locations/{REGION}/authProviders/syf-mcp-auth-provider",
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
+REGION = os.getenv("GOOGLE_CLOUD_REGION", "us-central1")
+BUCKET_NAME = os.getenv("SYF_WORKSPACE_BUCKET")
+SYF_MCP_URL = os.getenv("SYF_MCP_URL")
+AUTH_PROVIDER_URI = (
+    os.getenv("AUTH_PROVIDER_NAME")
+    or os.getenv("AUTH_PROVIDER_URI")
+    or os.getenv("SYF_MCP_AUTH_PROVIDER_URI")
 )
 
-# Register Lab 3 Agent Identity Auth Manager Provider (resolves via SPIFFE principal on Agent Runtime!)
+# Register Lab 3 Agent Identity Auth Manager Provider
 CredentialManager.register_auth_provider(GcpAuthProvider())
-syf_auth_scheme = GcpAuthProviderScheme(name=SYF_MCP_AUTH_PROVIDER_URI)
+syf_auth_scheme = GcpAuthProviderScheme(name=AUTH_PROVIDER_URI) if AUTH_PROVIDER_URI else None
 
 SKILLS_DIR = Path(__file__).parent / "skills"
+
+
+def _resolve_auth_manager_token(auth_provider_uri: str | None) -> str | None:
+    """Resolve credential token directly from GCP Agent Identity Auth Manager if needed."""
+    if not auth_provider_uri:
+        return None
+    try:
+        from google.cloud.agentidentitycredentials_v1 import (
+            AuthProviderCredentialsServiceClient,
+            RetrieveCredentialsRequest,
+        )
+
+        client = AuthProviderCredentialsServiceClient(transport="rest")
+        resp = client.retrieve_credentials(
+            RetrieveCredentialsRequest(
+                auth_provider=auth_provider_uri,
+                user_id=os.getenv("SYF_AUTH_USER_ID", "syf-vpm-runtime"),
+            ),
+            timeout=6.0,
+        )
+        if hasattr(resp, "success") and getattr(resp.success, "token", ""):
+            return resp.success.token.strip()
+        if getattr(resp, "token", ""):
+            return resp.token.strip()
+    except Exception as exc:
+        logger.debug("agentidentitycredentials_v1 lookup skipped: %s", exc)
+    return None
 
 
 def build_finops_mcp_toolset() -> McpToolset:
     """Create McpToolset authenticated via Lab 3 GcpAuthProviderScheme (SPIFFE principal on Agent Runtime)."""
     toolset: McpToolset | None = None
 
-    def finops_header_provider(readonly_ctx: Any) -> dict[str, str]:
-        fallback_key = os.environ.get(
-            "SYF_MCP_API_KEY", "syf-enterprise-secret-key-2026"
-        )
+    def finops_header_provider(readonly_context: Any) -> dict[str, str]:
         try:
             if toolset and toolset.get_auth_config():
                 auth_config = toolset.get_auth_config()
-                cred = None
-                if readonly_ctx and hasattr(readonly_ctx, "get_credential"):
-                    cred = readonly_ctx.get_credential(auth_config.credential_key)
+                cred = GcpAuthProvider().get_auth_credential(auth_config, readonly_context)
+                if not cred and readonly_context and hasattr(readonly_context, "get_credential"):
+                    cred = readonly_context.get_credential(auth_config.credential_key)
                 if not cred:
                     cred = auth_config.exchanged_auth_credential
                 if cred and cred.http:
-                    token = None
                     if cred.http.credentials and cred.http.credentials.token:
-                        token = cred.http.credentials.token
-                    elif cred.http.additional_headers:
+                        return {"Authorization": f"Bearer {cred.http.credentials.token}"}
+                    if cred.http.additional_headers:
                         token = (
                             cred.http.additional_headers.get("X-API-Key")
                             or cred.http.additional_headers.get("X-GOOG-API-KEY")
                         )
-                    if token:
-                        return {"Authorization": f"Bearer {token}"}
+                        if token:
+                            return {"Authorization": f"Bearer {token}"}
         except Exception as exc:
-            logger.warning("SPIFFE Auth provider header lookup fallback: %s", exc)
-        return {"Authorization": f"Bearer {fallback_key}"}
+            logger.debug("GcpAuthProvider credential lookup note: %s", exc)
+
+        token = _resolve_auth_manager_token(AUTH_PROVIDER_URI)
+        if token:
+            return {"Authorization": f"Bearer {token}"}
+        return {}
 
     toolset = McpToolset(
         connection_params=StreamableHTTPConnectionParams(url=SYF_MCP_URL),
@@ -109,7 +135,7 @@ def load_syf_skill(skill_name: str, include_references: bool = True) -> dict[str
                     for f in sorted(sub_dir.iterdir()):
                         if f.is_file():
                             refs[f"{sub}/{f.name}"] = f.read_text(encoding="utf-8")
-    else:
+    elif BUCKET_NAME:
         try:
             client = storage.Client(project=PROJECT_ID)
             bucket = client.bucket(BUCKET_NAME)

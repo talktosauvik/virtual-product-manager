@@ -2,11 +2,17 @@
 # Synchrony Financial (SYF) Virtual Product Manager — Root .gitignore
 # ============================================================================
 
-# Local Development Iteration Log (Explicitly Excluded)
+# Local Development Iteration Log & Private Blueprints (Explicitly Excluded)
 dev iteration.md
 **/dev iteration.md
 dev_iteration.md
 **/dev_iteration.md
+devin.md
+**/devin.md
+ENV_AND_AGENT_IDENTITY_BLUEPRINT.md
+SYF_VPM_Blueprint.md
+.agents/
+vpm-agent-a2ui/
 
 # Environment Variables & Secrets (Never Commit)
 .env
@@ -95,12 +101,15 @@ htmlcov/
 coverage.xml
 nosetests.xml
 
-# Terraform Local State
+# Terraform Local State & Secret Variable Files
 .terraform*
 **/.terraform*
 .Terraform*
 *.tfstate
 *.tfstate.*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
 
 # Logs, Temp & OS/IDE Files
 *.log

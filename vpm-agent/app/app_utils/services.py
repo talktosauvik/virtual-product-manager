@@ -24,12 +24,17 @@ from __future__ import annotations
 import functools
 import os
 
+from dotenv import load_dotenv
 from google.adk.artifacts import GcsArtifactService, InMemoryArtifactService
 from google.adk.cli.service_registry import get_service_registry
 from google.adk.cli.utils.service_factory import create_session_service_from_options
+from google.adk.memory import InMemoryMemoryService, VertexAiMemoryBankService
+
+load_dotenv()
 
 SESSION_SERVICE_URI = "shared://session"
 ARTIFACT_SERVICE_URI = "shared://artifact"
+MEMORY_SERVICE_URI = "shared://memory"
 
 _AGENT_DIR = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -67,6 +72,28 @@ def get_artifact_service():
     return InMemoryArtifactService()
 
 
+@functools.cache
+def get_memory_service():
+    """Process-wide Vertex AI Memory Bank service when configured (Lab 2), else in-memory."""
+    memory_bank_id = os.environ.get("MEMORY_BANK_ID") or os.environ.get(
+        "GOOGLE_CLOUD_AGENT_ENGINE_ID"
+    )
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+    location = (
+        os.environ.get("MEMORY_BANK_LOCATION")
+        or os.environ.get("GOOGLE_CLOUD_AGENT_ENGINE_LOCATION")
+        or os.environ.get("GOOGLE_CLOUD_REGION")
+    )
+    if memory_bank_id and project and location:
+        return VertexAiMemoryBankService(
+            project=project,
+            location=location,
+            agent_engine_id=memory_bank_id,
+        )
+    return InMemoryMemoryService()
+
+
 _registry = get_service_registry()
 _registry.register_session_service("shared", lambda uri, **kw: get_session_service())
 _registry.register_artifact_service("shared", lambda uri, **kw: get_artifact_service())
+_registry.register_memory_service("shared", lambda uri, **kw: get_memory_service())
